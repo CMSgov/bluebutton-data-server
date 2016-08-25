@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jboss-deployment-structure xmlns="urn:jboss:deployment-structure:1.3"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="urn:jboss:deployment-structure:1.3 http://www.jboss.org/schema/jbossas/jboss-deployment-structure-1_3.xsd">
+
+	<!-- This file can be used to control which subsystems WildFly makes available 
+		to this application. Documented here: https://docs.jboss.org/author/display/WFLY10/Developer+Guide#DeveloperGuide-JBossDeploymentStructureFile -->
+
+	<!-- This corresponds to the top level deployment. For a war this is the 
+		war's module, for an ear, this is the top level ear module, which contains 
+		all the classes in the EAR's lib folder -->
+	<deployment>
+		<!-- exclude-subsystem prevents a subsystems deployment unit processors 
+			running on a deployment, which gives basically the same effect as removing 
+			the subsystem, but it only affects single deployment -->
+		<exclude-subsystems>
+
+			<!-- These WildFly subsystems would otherwise conflict with the JARs baked 
+				in to this WAR (e.g. Hibernate). The list of available subsystems can be 
+				found here: https://docs.jboss.org/author/display/WFLY10/CLI+Recipes#CLIRecipes-ListSubsystems. Note that WildFly doesn't activate all of its subsystems by default; instead, the subsystems are enabled only for those applications that meet certain conditions: https://docs.jboss.org/author/display/WFLY10/Implicit+module+dependencies+for+deployments -->
+			<subsystem name="jpa" />
+			<subsystem name="weld" />
+
+		</exclude-subsystems>
+
+		<!-- Exclusions allow you to prevent the server from automatically adding 
+			some dependencies. -->
+		<exclusions>
+			<!-- <module name="org.javassist" /> -->
+		</exclusions>
+	</deployment>
+
+</jboss-deployment-structure>
