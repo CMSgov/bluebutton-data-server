@@ -24,7 +24,6 @@ import ca.uhn.fhir.jpa.provider.JpaSystemProviderDstu1;
 import ca.uhn.fhir.jpa.provider.JpaSystemProviderDstu2;
 import ca.uhn.fhir.jpa.provider.dstu3.JpaConformanceProviderDstu3;
 import ca.uhn.fhir.jpa.provider.dstu3.JpaSystemProviderDstu3;
-import ca.uhn.fhir.jpa.search.DatabaseBackedPagingProvider;
 import ca.uhn.fhir.model.api.IResource;
 import ca.uhn.fhir.model.dstu2.composite.MetaDt;
 import ca.uhn.fhir.model.dstu2.resource.Bundle;
@@ -152,12 +151,10 @@ public class BlueButtonServer extends RestfulServer {
 		setDefaultResponseEncoding(EncodingEnum.XML);
 
 		/*
-		 * -- New in HAPI FHIR 1.5 -- This configures the server to page search
-		 * results to and from the database, instead of only paging them to
-		 * memory. This may mean a performance hit when performing searches that
-		 * return lots of results, but makes the server much more scalable.
+		 * Disable paging, at least for the initial ETL load, as it adds a ton
+		 * of unnecessary overhead.
 		 */
-		setPagingProvider(myAppCtx.getBean(DatabaseBackedPagingProvider.class));
+		setPagingProvider(null);
 
 		/*
 		 * Load interceptors for the server from Spring (these are defined in
