@@ -25,6 +25,11 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.persistence.EntityManager;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
+
 import org.apache.commons.lang3.StringUtils;
 import org.hl7.fhir.dstu3.model.CodeableConcept;
 import org.hl7.fhir.dstu3.model.Coding;
@@ -43,6 +48,7 @@ import org.hl7.fhir.dstu3.model.ExplanationOfBenefit.ProcedureComponent;
 import org.hl7.fhir.dstu3.model.ExplanationOfBenefit.SupportingInformationComponent;
 import org.hl7.fhir.dstu3.model.Extension;
 import org.hl7.fhir.dstu3.model.Identifier;
+import org.hl7.fhir.dstu3.model.Meta;
 import org.hl7.fhir.dstu3.model.Money;
 import org.hl7.fhir.dstu3.model.Observation;
 import org.hl7.fhir.dstu3.model.Observation.ObservationStatus;
@@ -90,6 +96,8 @@ import gov.hhs.cms.bluebutton.data.model.rif.InpatientClaimLine;
 import gov.hhs.cms.bluebutton.data.model.rif.OutpatientClaim;
 import gov.hhs.cms.bluebutton.data.model.rif.OutpatientClaimColumn;
 import gov.hhs.cms.bluebutton.data.model.rif.OutpatientClaimLine;
+import gov.hhs.cms.bluebutton.data.model.rif.RifDataloadHistory;
+import gov.hhs.cms.bluebutton.data.model.rif.RifDataloadHistory_;
 import gov.hhs.cms.bluebutton.data.model.rif.SNFClaim;
 import gov.hhs.cms.bluebutton.data.model.rif.SNFClaimColumn;
 import gov.hhs.cms.bluebutton.data.model.rif.SNFClaimLine;
@@ -133,6 +141,26 @@ public final class TransformerUtils {
 	 * Tracks the national drug codes that have already had code lookup failures.
 	 */
 	private static final Set<String> drugCodeLookupMissingFailures = new HashSet<>();
+
+	/**
+	 * Stores the diagnosis ICD codes and their display values
+	 */
+	private static Map<String, String> icdMap = null;
+
+	/**
+	 * Tracks the diagnosis ICD codes that have already had code lookup failures.
+	 */
+	private static final Set<String> icdLookupMissingFailures = new HashSet<>();
+
+	/**
+	 * Stores the procedure codes and their display values
+	 */
+	private static Map<String, String> procedureMap = null;
+
+	/**
+	 * Tracks the procedure codes that have already had code lookup failures.
+	 */
+	private static final Set<String> procedureLookupMissingFailures = new HashSet<>();
 
 	/**
 	 * @param eob
@@ -566,7 +594,8 @@ public final class TransformerUtils {
 			return existingProcedure.get().getSequenceElement().getValue();
 
 		ProcedureComponent procedureComponent = new ProcedureComponent().setSequence(eob.getProcedure().size() + 1);
-		procedureComponent.setProcedure(createCodeableConcept(procedure.getFhirSystem(), procedure.getCode()));
+		procedureComponent.setProcedure(createCodeableConcept(procedure.getFhirSystem(), null,
+				retrieveProcedureCodeDisplay(procedure.getCode()), procedure.getCode()));
 		if (procedure.getProcedureDate().isPresent()) {
 			procedureComponent.setDate(convertToDate(procedure.getProcedureDate().get()));
 		}
@@ -1202,6 +1231,51 @@ public final class TransformerUtils {
 	 */
 	static Reference referencePractitioner(String practitionerNpi) {
 		return createIdentifierReference(TransformerConstants.CODING_NPI_US, practitionerNpi);
+	}
+
+	/**
+	 * read the RifDataloadHistory table to get last updated date for each file type
+	 * 
+	 * @param builder
+	 *            the {@link CriteriaBuilder} to use to build the query
+	 * @param entityManager
+	 *            the {@link EntityManager} with/to
+	 * @param fileType
+	 *            the beneficiary or claim type
+	 * @param patient
+	 *            the {@link Patient} data to read for last updated date
+	 * @param eob
+	 *            the {@link ExplanationOfBenefit} data to read for last updated
+	 *            date
+	 */
+	static void setMetaData(CriteriaBuilder builder, EntityManager entityManager, String fileType, Patient patient,
+			ExplanationOfBenefit eob) {
+		List<RifDataloadHistory> rifDataloadHistoryList = new ArrayList<RifDataloadHistory>();
+		CriteriaQuery<RifDataloadHistory> rifDataloadHistoryQuery = builder.createQuery(RifDataloadHistory.class);
+		Root<RifDataloadHistory> rifDataloadHistoryRoot = rifDataloadHistoryQuery.from(RifDataloadHistory.class); //
+		rifDataloadHistoryQuery.select(rifDataloadHistoryRoot);
+		rifDataloadHistoryQuery
+				.where(builder.equal(rifDataloadHistoryRoot.get(RifDataloadHistory_.recordType),
+						fileType.toUpperCase()));
+		// TODO: change following orderyBy to use builder.max in the CriteriaQuery for
+		// better efficiency
+		rifDataloadHistoryQuery
+				.orderBy(builder.desc(rifDataloadHistoryRoot.get(RifDataloadHistory_.createUpdateTimestamp)));
+		rifDataloadHistoryList.addAll(entityManager.createQuery(rifDataloadHistoryQuery).getResultList());
+
+		if (rifDataloadHistoryList.size() > 0) {
+			try {
+				if (patient == null) {
+					eob.setMeta(new Meta().setLastUpdated(
+							new Date(rifDataloadHistoryList.get(0).getCreateUpdateTimestamp().getTime())));
+				} else {
+					patient.setMeta(new Meta().setLastUpdated(
+							new Date(rifDataloadHistoryList.get(0).getCreateUpdateTimestamp().getTime())));
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 	/**
@@ -2519,6 +2593,144 @@ public final class TransformerUtils {
 			// Note: Only CARRIER and DME claims have the year/version field.
 			concept.getCodingFirstRep().setVersion(hcpcsYear.get().toString());
 		});
+	}
+
+	/**
+	 * Retrieves the Diagnosis display value from a Diagnosis code look up file
+	 * 
+	 * @param icdCode
+	 *            - Diagnosis code
+	 */
+	public static String retrieveIcdCodeDisplay(String icdCode) {
+
+		if (icdCode.isEmpty())
+			return null;
+
+		/*
+		 * There's a race condition here: we may initialize this static field more than
+		 * once if multiple requests come in at the same time. However, the assignment
+		 * is atomic, so the race and reinitialization is harmless other than maybe
+		 * wasting a bit of time.
+		 */
+		// read the entire ICD file the first time and put in a Map
+		if (icdMap == null) {
+			icdMap = readIcdCodeFile();
+		}
+
+		if (icdMap.containsKey(icdCode)) {
+			String icdCodeDisplay = icdMap.get(icdCode);
+			return icdCodeDisplay;
+		}
+
+		// log which NDC codes we couldn't find a match for in our downloaded NDC file
+		if (!drugCodeLookupMissingFailures.contains(icdCode)) {
+			drugCodeLookupMissingFailures.add(icdCode);
+			LOGGER.info("No ICD code display value match found for ICD code {} in resource {}.", icdCode,
+					"DGNS_CD.txt");
+		}
+
+		return null;
+	}
+
+	/**
+	 * Reads ALL the ICD codes and display values from the DGNS_CD.txt file
+	 * 
+	 */
+	public static Map<String, String> readIcdCodeFile() {
+
+		Map<String, String> icdDiagnosisMap = new HashMap<String, String>();
+		InputStream icdCodeDisplayStream = Thread.currentThread().getContextClassLoader()
+				.getResourceAsStream("DGNS_CD.txt");
+
+		BufferedReader icdCodesIn = null;
+		icdCodesIn = new BufferedReader(new InputStreamReader(icdCodeDisplayStream));
+
+		// We want to extract the ICD Diagnosis codes and display values and put in a
+		// Map
+		// for easy retrieval to get the
+		// display value
+		String line = "";
+		try {
+			icdCodesIn.readLine();
+			while ((line = icdCodesIn.readLine()) != null) {
+				String icdColumns[] = line.split("\t");
+				icdDiagnosisMap.put(icdColumns[0], icdColumns[1]);
+			}
+			icdCodesIn.close();
+		} catch (IOException e) {
+			throw new UncheckedIOException("Unable to read ICD code data.", e);
+		}
+
+		return icdDiagnosisMap;
+	}
+
+	/**
+	 * Retrieves the Procedure code and display value from a Procedure code look up
+	 * file
+	 * 
+	 * @param procedureCode
+	 *            - Procedure code
+	 */
+	public static String retrieveProcedureCodeDisplay(String procedureCode) {
+
+		if (procedureCode.isEmpty())
+			return null;
+
+		/*
+		 * There's a race condition here: we may initialize this static field more than
+		 * once if multiple requests come in at the same time. However, the assignment
+		 * is atomic, so the race and reinitialization is harmless other than maybe
+		 * wasting a bit of time.
+		 */
+		// read the entire Procedure code file the first time and put in a Map
+		if (procedureMap == null) {
+			procedureMap = readProcedureCodeFile();
+		}
+
+		if (procedureMap.containsKey(procedureCode)) {
+			String procedureCodeDisplay = procedureMap.get(procedureCode);
+			return procedureCodeDisplay;
+		}
+
+		// log which Procedure codes we couldn't find a match for in our procedure codes
+		// file
+		if (!procedureLookupMissingFailures.contains(procedureCode)) {
+			procedureLookupMissingFailures.add(procedureCode);
+			LOGGER.info("No procedure code display value match found for procedure code {} in resource {}.",
+					procedureCode, "PRCDR_CD.txt");
+		}
+
+		return null;
+	}
+
+	/**
+	 * Reads all the procedure codes and display values from the PRCDR_CD.txt file
+	 * 
+	 */
+	public static Map<String, String> readProcedureCodeFile() {
+
+		Map<String, String> procedureCodeMap = new HashMap<String, String>();
+		InputStream procedureCodeDisplayStream = Thread.currentThread().getContextClassLoader()
+				.getResourceAsStream("PRCDR_CD.txt");
+
+		BufferedReader procedureCodesIn = null;
+		procedureCodesIn = new BufferedReader(new InputStreamReader(procedureCodeDisplayStream));
+
+		// We want to extract the procedure codes and display values and put in a
+		// Map for easy retrieval to get the display value
+		String line = "";
+		try {
+			procedureCodesIn.readLine();
+			while ((line = procedureCodesIn.readLine()) != null) {
+				String icdColumns[] = line.split("\t");
+				procedureCodeMap.put(icdColumns[0], icdColumns[1]);
+			}
+			procedureCodesIn.close();
+		} catch (IOException e) {
+			throw new UncheckedIOException("Unable to read Procedure code data.", e);
+		}
+
+		return procedureCodeMap;
 	}
 
 	/**

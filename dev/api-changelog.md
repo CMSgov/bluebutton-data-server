@@ -1,5 +1,9 @@
 # API Changelog 
 
+## BLUEBUTTON-267: Refresh API Schedule
+
+Code has been added to set the LastUpdated date in the resource's (i.e. EOB, Patient) meta data section for when a certain claim type or beneficiary was last updated in our Blue Button FHIR database. 
+
 ## BLUEBUTTON-146: Display NDC (National Drug Code) Substance Names in EOB
 
 Several changes have been made to these entries:
