@@ -94,7 +94,7 @@ public final class CarrierClaimTransformerTest {
 		Assert.assertEquals(5, eob.getDiagnosis().size());
 		Assert.assertEquals(1, eob.getItem().size());
 
-		TransformerTestUtils.assertAdjudicationTotalAmountEquals(CcwCodebookVariable.PRPAYAMT,
+		TransformerTestUtils.assertExtensionQuantityEquivalent(CcwCodebookVariable.PRPAYAMT,
 				claim.getPrimaryPayerPaidAmount(), eob);
 		
 		CarrierClaimLine claimLine1 = claim.getLines().get(0);

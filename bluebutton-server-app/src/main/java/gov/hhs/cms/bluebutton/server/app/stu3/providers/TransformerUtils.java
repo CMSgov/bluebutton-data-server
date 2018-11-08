@@ -156,6 +156,51 @@ public final class TransformerUtils {
 
 	/**
 	 * @param eob
+	 *            the {@link ExplanationOfBenefit} that the primary payer paid
+	 *            amount should be part of
+	 * @param categoryVariable
+	 *            the {@link CcwCodebookVariable} to map to the adjudication's
+	 *            <code>category</code>
+	 * @param amountValue
+	 *            the {@link Quantity#getValue()} for the primary payer paid amount
+	 *            total
+	 * @return the new {@link BenefitBalanceComponent}, which will have already been
+	 *         added to the appropriate
+	 *         {@link ExplanationOfBenefit#getBenefitBalance()} entry
+	 */
+	static void addPrimaryPayerPaidAmount(ExplanationOfBenefit eob, CcwCodebookVariable categoryVariable,
+			Optional<? extends Number> amountValue) {
+
+		String extensionUrl = calculateVariableReferenceUrl(categoryVariable);
+		Quantity totalAmountQuantity = new Quantity();
+		totalAmountQuantity.setValue((BigDecimal) amountValue.get()).setCode(TransformerConstants.CODED_MONEY_USD)
+				.setSystem(TransformerConstants.CODING_MONEY);
+		Extension adjudicationTotalEextension = new Extension(extensionUrl, totalAmountQuantity);
+
+		eob.addExtension(adjudicationTotalEextension);
+	}
+
+	/**
+	 * @param eob
+	 *            the {@link ExplanationOfBenefit} that the primary payer paid
+	 *            amount should be part of
+	 * @param categoryVariable
+	 *            the {@link CcwCodebookVariable} to map to the adjudication's
+	 *            <code>category</code>
+	 * @param totalAmountValue
+	 *            the {@link Quantity#getValue()} for the primary payer paid amount
+	 *            total
+	 * @return the new {@link BenefitBalanceComponent}, which will have already been
+	 *         added to the appropriate
+	 *         {@link ExplanationOfBenefit#getBenefitBalance()} entry
+	 */
+	static void addPrimaryPayerPaidAmount(ExplanationOfBenefit eob, CcwCodebookVariable categoryVariable,
+			Number totalAmountValue) {
+		addPrimaryPayerPaidAmount(eob, categoryVariable, Optional.of(totalAmountValue));
+	}
+
+	/**
+	 * @param eob
 	 *            the {@link ExplanationOfBenefit} that the adjudication total
 	 *            should be part of
 	 * @param categoryVariable
@@ -2155,7 +2200,7 @@ public final class TransformerUtils {
 		}
 		eob.setTotalCost(createMoney(totalChargeAmount));
 
-		addAdjudicationTotal(eob, CcwCodebookVariable.PRPAYAMT, primaryPayerPaidAmount);
+		addPrimaryPayerPaidAmount(eob, CcwCodebookVariable.PRPAYAMT, primaryPayerPaidAmount);
 
 		if (fiscalIntermediaryNumber.isPresent()) {
 			eob.addExtension(createExtensionIdentifier(CcwCodebookVariable.FI_NUM, fiscalIntermediaryNumber));

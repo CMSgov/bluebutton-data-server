@@ -1742,7 +1742,7 @@ final class TransformerTestUtils {
 		TransformerTestUtils.assertCareTeamEquals(attendingPhysicianNpi.get(), ClaimCareteamrole.PRIMARY, eob);
 
 		Assert.assertEquals(totalChargeAmount, eob.getTotalCost().getValue());
-		TransformerTestUtils.assertAdjudicationTotalAmountEquals(CcwCodebookVariable.PRPAYAMT, primaryPayerPaidAmount,
+		TransformerTestUtils.assertExtensionQuantityEquivalent(CcwCodebookVariable.PRPAYAMT, primaryPayerPaidAmount,
 				eob);
 		
 		if (fiscalIntermediaryNumber.isPresent()) {
@@ -2009,5 +2009,40 @@ final class TransformerTestUtils {
 		Assert.assertEquals(TransformerUtils.retrieveFDADrugCodeDisplay(nationalDrugCode),
 				nationalDrugCodeDisplayValue);
 
+	}
+
+	/**
+	 * @param ccwVariable
+	 *            the {@link CcwCodebookVariable} that was mapped
+	 * @param expectedValue
+	 *            the expected {@link Quantity#getValue()}
+	 * @param actualElement
+	 *            the FHIR element to find and verify the {@link Extension} of
+	 */
+	static void assertExtensionQuantityEquivalent(CcwCodebookVariable ccwVariable, Number expectedValue,
+			IBaseHasExtensions actualElement) {
+		assertExtensionQuantityEquivalent(ccwVariable, Optional.of(expectedValue), actualElement);
+	}
+
+	/**
+	 * @param ccwVariable
+	 *            the {@link CcwCodebookVariable} that the expected
+	 *            {@link Extension} / {@link Coding} are for
+	 * @param expectedValue
+	 *            the expected {@link Quantity#getValue()}
+	 * @param actualElement
+	 *            the FHIR element to find and verify the {@link Extension} of
+	 */
+	public static void assertExtensionQuantityEquivalent(CcwCodebookVariable ccwVariable,
+			Optional<? extends Number> expectedValue, IBaseHasExtensions actualElement) {
+		String expectedExtensionUrl = TransformerUtils.calculateVariableReferenceUrl(ccwVariable);
+		Optional<? extends IBaseExtension<?, ?>> extensionForUrl = actualElement.getExtension().stream()
+				.filter(e -> e.getUrl().equals(expectedExtensionUrl)).findFirst();
+
+		Assert.assertEquals(expectedValue.isPresent(), extensionForUrl.isPresent());
+		if (expectedValue.isPresent()) {
+			Quantity qty = (Quantity) extensionForUrl.get().getValue();
+			assertEquivalent((BigDecimal) expectedValue.get(), qty.getValue());
+		}
 	}
 }
