@@ -78,30 +78,30 @@ final class InpatientClaimTransformer {
 				claimGroup.getMedicareBenefitsExhaustedDate(), claimGroup.getDiagnosisRelatedGroupCd());
 
 		if (claimGroup.getIndirectMedicalEducationAmount().isPresent()) {
-			TransformerUtils.addAdjudicationTotal(eob, CcwCodebookVariable.IME_OP_CLM_VAL_AMT,
+			TransformerUtils.addValueQuantity(eob, CcwCodebookVariable.IME_OP_CLM_VAL_AMT,
 					claimGroup.getIndirectMedicalEducationAmount());
 		}
 
 		if (claimGroup.getDisproportionateShareAmount().isPresent()) {
-			TransformerUtils.addAdjudicationTotal(eob, CcwCodebookVariable.DSH_OP_CLM_VAL_AMT,
+			TransformerUtils.addValueQuantity(eob, CcwCodebookVariable.DSH_OP_CLM_VAL_AMT,
 					claimGroup.getDisproportionateShareAmount());
 		}
 
 		// TODO If actually nullable, should be Optional.
 		if (claimGroup.getPassThruPerDiemAmount() != null) {
-			TransformerUtils.addAdjudicationTotal(eob, CcwCodebookVariable.CLM_PASS_THRU_PER_DIEM_AMT,
+			TransformerUtils.addValueQuantity(eob, CcwCodebookVariable.CLM_PASS_THRU_PER_DIEM_AMT,
 					claimGroup.getPassThruPerDiemAmount());
 		}
 
 		// TODO If actually nullable, should be Optional.
 		if (claimGroup.getProfessionalComponentCharge() != null) {
-			TransformerUtils.addAdjudicationTotal(eob, CcwCodebookVariable.NCH_PROFNL_CMPNT_CHRG_AMT,
+			TransformerUtils.addValueQuantity(eob, CcwCodebookVariable.NCH_PROFNL_CMPNT_CHRG_AMT,
 					claimGroup.getProfessionalComponentCharge());
 		}
 
 		// TODO If actually nullable, should be Optional.
 		if (claimGroup.getClaimTotalPPSCapitalAmount() != null) {
-			TransformerUtils.addAdjudicationTotal(eob, CcwCodebookVariable.CLM_TOT_PPS_CPTL_AMT,
+			TransformerUtils.addValueQuantity(eob, CcwCodebookVariable.CLM_TOT_PPS_CPTL_AMT,
 					claimGroup.getClaimTotalPPSCapitalAmount());
 		}
 	
@@ -119,7 +119,7 @@ final class InpatientClaimTransformer {
 
 		// TODO If this is actually nullable, should be Optional.
 		if (claimGroup.getDrgOutlierApprovedPaymentAmount() != null) {
-			TransformerUtils.addAdjudicationTotal(eob, CcwCodebookVariable.NCH_DRG_OUTLIER_APRVD_PMT_AMT,
+			TransformerUtils.addValueQuantity(eob, CcwCodebookVariable.NCH_DRG_OUTLIER_APRVD_PMT_AMT,
 					claimGroup.getDrgOutlierApprovedPaymentAmount());
 		}
 

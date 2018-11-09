@@ -67,15 +67,15 @@ public final class OutpatientClaimTransformerTest {
 		// test the common field provider number is set as expected in the EOB
 		TransformerTestUtils.assertProviderNumber(eob, claim.getProviderNumber());
 
-		TransformerTestUtils.assertAdjudicationTotalAmountEquals(CcwCodebookVariable.NCH_BENE_PTB_DDCTBL_AMT,
+		TransformerTestUtils.assertExtensionQuantityEquivalent(CcwCodebookVariable.NCH_BENE_PTB_DDCTBL_AMT,
 				claim.getDeductibleAmount(), eob);
-		TransformerTestUtils.assertAdjudicationTotalAmountEquals(CcwCodebookVariable.NCH_PROFNL_CMPNT_CHRG_AMT,
+		TransformerTestUtils.assertExtensionQuantityEquivalent(CcwCodebookVariable.NCH_PROFNL_CMPNT_CHRG_AMT,
 				claim.getProfessionalComponentCharge(), eob);
-		TransformerTestUtils.assertAdjudicationTotalAmountEquals(CcwCodebookVariable.NCH_BENE_PTB_COINSRNC_AMT,
+		TransformerTestUtils.assertExtensionQuantityEquivalent(CcwCodebookVariable.NCH_BENE_PTB_COINSRNC_AMT,
 				claim.getCoinsuranceAmount(), eob);
-		TransformerTestUtils.assertAdjudicationTotalAmountEquals(CcwCodebookVariable.CLM_OP_PRVDR_PMT_AMT,
+		TransformerTestUtils.assertExtensionQuantityEquivalent(CcwCodebookVariable.CLM_OP_PRVDR_PMT_AMT,
 				claim.getProviderPaymentAmount(), eob);
-		TransformerTestUtils.assertAdjudicationTotalAmountEquals(CcwCodebookVariable.CLM_OP_BENE_PMT_AMT,
+		TransformerTestUtils.assertExtensionQuantityEquivalent(CcwCodebookVariable.CLM_OP_BENE_PMT_AMT,
 				claim.getBeneficiaryPaymentAmount(), eob);
 
 		// Test to ensure common group fields between Inpatient, Outpatient and SNF

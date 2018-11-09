@@ -168,16 +168,16 @@ public final class TransformerUtils {
 	 *         added to the appropriate
 	 *         {@link ExplanationOfBenefit#getBenefitBalance()} entry
 	 */
-	static void addPrimaryPayerPaidAmount(ExplanationOfBenefit eob, CcwCodebookVariable categoryVariable,
+	static void addValueQuantity(ExplanationOfBenefit eob, CcwCodebookVariable categoryVariable,
 			Optional<? extends Number> amountValue) {
 
 		String extensionUrl = calculateVariableReferenceUrl(categoryVariable);
-		Quantity totalAmountQuantity = new Quantity();
-		totalAmountQuantity.setValue((BigDecimal) amountValue.get()).setCode(TransformerConstants.CODED_MONEY_USD)
+		Quantity quantity = new Quantity();
+		quantity.setValue((BigDecimal) amountValue.get()).setCode(TransformerConstants.CODED_MONEY_USD)
 				.setSystem(TransformerConstants.CODING_MONEY);
-		Extension adjudicationTotalEextension = new Extension(extensionUrl, totalAmountQuantity);
+		Extension quantityExtension = new Extension(extensionUrl, quantity);
 
-		eob.addExtension(adjudicationTotalEextension);
+		eob.addExtension(quantityExtension);
 	}
 
 	/**
@@ -194,57 +194,9 @@ public final class TransformerUtils {
 	 *         added to the appropriate
 	 *         {@link ExplanationOfBenefit#getBenefitBalance()} entry
 	 */
-	static void addPrimaryPayerPaidAmount(ExplanationOfBenefit eob, CcwCodebookVariable categoryVariable,
+	static void addValueQuantity(ExplanationOfBenefit eob, CcwCodebookVariable categoryVariable,
 			Number totalAmountValue) {
-		addPrimaryPayerPaidAmount(eob, categoryVariable, Optional.of(totalAmountValue));
-	}
-
-	/**
-	 * @param eob
-	 *            the {@link ExplanationOfBenefit} that the adjudication total
-	 *            should be part of
-	 * @param categoryVariable
-	 *            the {@link CcwCodebookVariable} to map to the adjudication's
-	 *            <code>category</code>
-	 * @param amountValue
-	 *            the {@link Money#getValue()} for the adjudication total
-	 * @return the new {@link BenefitBalanceComponent}, which will have already been
-	 *         added to the appropriate
-	 *         {@link ExplanationOfBenefit#getBenefitBalance()} entry
-	 */
-	static void addAdjudicationTotal(ExplanationOfBenefit eob, CcwCodebookVariable categoryVariable,
-			Optional<? extends Number> amountValue) {
-		/*
-		 * TODO Once we switch to STU4 (expected >= Q3 2018), remap these to the new
-		 * `ExplanationOfBenefit.total` field. In anticipation of that, the
-		 * CcwCodebookVariable param here is named `category`: right now it's used for
-		 * the `Extension.url` but can be changed to
-		 * `ExplanationOfBenefit.total.category` once this mapping is moved to STU4.
-		 */
-
-		String extensionUrl = calculateVariableReferenceUrl(categoryVariable);
-		Money adjudicationTotalAmount = createMoney(amountValue);
-		Extension adjudicationTotalEextension = new Extension(extensionUrl, adjudicationTotalAmount);
-
-		eob.addExtension(adjudicationTotalEextension);
-	}
-
-	/**
-	 * @param eob
-	 *            the {@link ExplanationOfBenefit} that the adjudication total
-	 *            should be part of
-	 * @param categoryVariable
-	 *            the {@link CcwCodebookVariable} to map to the adjudication's
-	 *            <code>category</code>
-	 * @param totalAmountValue
-	 *            the {@link Money#getValue()} for the adjudication total
-	 * @return the new {@link BenefitBalanceComponent}, which will have already been
-	 *         added to the appropriate
-	 *         {@link ExplanationOfBenefit#getBenefitBalance()} entry
-	 */
-	static void addAdjudicationTotal(ExplanationOfBenefit eob, CcwCodebookVariable categoryVariable,
-			Number totalAmountValue) {
-		addAdjudicationTotal(eob, categoryVariable, Optional.of(totalAmountValue));
+		addValueQuantity(eob, categoryVariable, Optional.of(totalAmountValue));
 	}
 
 	/**
@@ -1441,8 +1393,8 @@ public final class TransformerUtils {
 				CcwCodebookVariable.CLM_NON_UTLZTN_DAYS_CNT);
 		clmNonUtlztnDaysCntFinancial.setUsed(new UnsignedIntType(nonUtilizationDayCount.intValueExact()));
 
-		addAdjudicationTotal(eob, CcwCodebookVariable.NCH_BENE_IP_DDCTBL_AMT, deductibleAmount);
-		addAdjudicationTotal(eob, CcwCodebookVariable.NCH_BENE_PTA_COINSRNC_LBLTY_AMT, partACoinsuranceLiabilityAmount);
+		addValueQuantity(eob, CcwCodebookVariable.NCH_BENE_IP_DDCTBL_AMT, deductibleAmount);
+		addValueQuantity(eob, CcwCodebookVariable.NCH_BENE_PTA_COINSRNC_LBLTY_AMT, partACoinsuranceLiabilityAmount);
 
 		SupportingInformationComponent nchBloodPntsFrnshdQtyInfo = addInformation(eob,
 				CcwCodebookVariable.NCH_BLOOD_PNTS_FRNSHD_QTY);
@@ -1453,32 +1405,32 @@ public final class TransformerUtils {
 				.setUnit(TransformerConstants.CODING_SYSTEM_UCUM_PINT_DISPLAY);
 		nchBloodPntsFrnshdQtyInfo.setValue(bloodPintsQuantity);
 
-		addAdjudicationTotal(eob, CcwCodebookVariable.NCH_IP_NCVRD_CHRG_AMT, noncoveredCharge);
-		addAdjudicationTotal(eob, CcwCodebookVariable.NCH_IP_TOT_DDCTN_AMT, totalDeductionAmount);
+		addValueQuantity(eob, CcwCodebookVariable.NCH_IP_NCVRD_CHRG_AMT, noncoveredCharge);
+		addValueQuantity(eob, CcwCodebookVariable.NCH_IP_TOT_DDCTN_AMT, totalDeductionAmount);
 
 		if (claimPPSCapitalDisproportionateShareAmt.isPresent()) {
-			addAdjudicationTotal(eob, CcwCodebookVariable.CLM_PPS_CPTL_DSPRPRTNT_SHR_AMT,
+			addValueQuantity(eob, CcwCodebookVariable.CLM_PPS_CPTL_DSPRPRTNT_SHR_AMT,
 					claimPPSCapitalDisproportionateShareAmt);
 		}
 
 		if (claimPPSCapitalExceptionAmount.isPresent()) {
-			addAdjudicationTotal(eob, CcwCodebookVariable.CLM_PPS_CPTL_EXCPTN_AMT, claimPPSCapitalExceptionAmount);
+			addValueQuantity(eob, CcwCodebookVariable.CLM_PPS_CPTL_EXCPTN_AMT, claimPPSCapitalExceptionAmount);
 		}
 
 		if (claimPPSCapitalFSPAmount.isPresent()) {
-			addAdjudicationTotal(eob, CcwCodebookVariable.CLM_PPS_CPTL_FSP_AMT, claimPPSCapitalFSPAmount);
+			addValueQuantity(eob, CcwCodebookVariable.CLM_PPS_CPTL_FSP_AMT, claimPPSCapitalFSPAmount);
 		}
 
 		if (claimPPSCapitalIMEAmount.isPresent()) {
-			addAdjudicationTotal(eob, CcwCodebookVariable.CLM_PPS_CPTL_IME_AMT, claimPPSCapitalIMEAmount);
+			addValueQuantity(eob, CcwCodebookVariable.CLM_PPS_CPTL_IME_AMT, claimPPSCapitalIMEAmount);
 		}
 
 		if (claimPPSCapitalOutlierAmount.isPresent()) {
-			addAdjudicationTotal(eob, CcwCodebookVariable.CLM_PPS_CPTL_OUTLIER_AMT, claimPPSCapitalOutlierAmount);
+			addValueQuantity(eob, CcwCodebookVariable.CLM_PPS_CPTL_OUTLIER_AMT, claimPPSCapitalOutlierAmount);
 		}
 
 		if (claimPPSOldCapitalHoldHarmlessAmount.isPresent()) {
-			addAdjudicationTotal(eob, CcwCodebookVariable.CLM_PPS_OLD_CPTL_HLD_HRMLS_AMT,
+			addValueQuantity(eob, CcwCodebookVariable.CLM_PPS_OLD_CPTL_HLD_HRMLS_AMT,
 					claimPPSOldCapitalHoldHarmlessAmount);
 		}
 	}
@@ -1771,11 +1723,11 @@ public final class TransformerUtils {
 			eob.addExtension(createExtensionIdentifier(CcwCodebookVariable.CLM_CLNCL_TRIL_NUM, clinicalTrialNumber));
 		}
 
-		addAdjudicationTotal(eob, CcwCodebookVariable.CARR_CLM_CASH_DDCTBL_APLD_AMT, beneficiaryPartBDeductAmount);
-		addAdjudicationTotal(eob, CcwCodebookVariable.NCH_CLM_PRVDR_PMT_AMT, providerPaymentAmount);
-		addAdjudicationTotal(eob, CcwCodebookVariable.NCH_CLM_BENE_PMT_AMT, beneficiaryPaymentAmount);
-		addAdjudicationTotal(eob, CcwCodebookVariable.NCH_CARR_CLM_SBMTD_CHRG_AMT, submittedChargeAmount);
-		addAdjudicationTotal(eob, CcwCodebookVariable.NCH_CARR_CLM_ALOWD_AMT, allowedChargeAmount);
+		addValueQuantity(eob, CcwCodebookVariable.CARR_CLM_CASH_DDCTBL_APLD_AMT, beneficiaryPartBDeductAmount);
+		addValueQuantity(eob, CcwCodebookVariable.NCH_CLM_PRVDR_PMT_AMT, providerPaymentAmount);
+		addValueQuantity(eob, CcwCodebookVariable.NCH_CLM_BENE_PMT_AMT, beneficiaryPaymentAmount);
+		addValueQuantity(eob, CcwCodebookVariable.NCH_CARR_CLM_SBMTD_CHRG_AMT, submittedChargeAmount);
+		addValueQuantity(eob, CcwCodebookVariable.NCH_CARR_CLM_ALOWD_AMT, allowedChargeAmount);
 	}
 
 	/**
@@ -2097,7 +2049,7 @@ public final class TransformerUtils {
 	static void mapEobCommonGroupInpOutSNF(ExplanationOfBenefit eob, BigDecimal bloodDeductibleLiabilityAmount,
 			Optional<String> operatingPhysicianNpi, Optional<String> otherPhysicianNpi, char claimQueryCode,
 			Optional<Character> mcoPaidSw) {
-		addAdjudicationTotal(eob, CcwCodebookVariable.NCH_BENE_BLOOD_DDCTBL_LBLTY_AM, bloodDeductibleLiabilityAmount);
+		addValueQuantity(eob, CcwCodebookVariable.NCH_BENE_BLOOD_DDCTBL_LBLTY_AM, bloodDeductibleLiabilityAmount);
 
 		if (operatingPhysicianNpi.isPresent()) {
 			TransformerUtils.addCareTeamPractitioner(eob, null, TransformerConstants.CODING_NPI_US,
@@ -2200,7 +2152,7 @@ public final class TransformerUtils {
 		}
 		eob.setTotalCost(createMoney(totalChargeAmount));
 
-		addPrimaryPayerPaidAmount(eob, CcwCodebookVariable.PRPAYAMT, primaryPayerPaidAmount);
+		addValueQuantity(eob, CcwCodebookVariable.PRPAYAMT, primaryPayerPaidAmount);
 
 		if (fiscalIntermediaryNumber.isPresent()) {
 			eob.addExtension(createExtensionIdentifier(CcwCodebookVariable.FI_NUM, fiscalIntermediaryNumber));

@@ -72,15 +72,15 @@ public final class InpatientClaimTransformerTest {
 			TransformerTestUtils.assertInfoWithCodeEquals(CcwCodebookVariable.NCH_PTNT_STUS_IND_CD,
 					CcwCodebookVariable.NCH_PTNT_STUS_IND_CD, claim.getPatientStatusCd(), eob);
 
-		TransformerTestUtils.assertAdjudicationTotalAmountEquals(CcwCodebookVariable.CLM_PASS_THRU_PER_DIEM_AMT,
+		TransformerTestUtils.assertExtensionQuantityEquivalent(CcwCodebookVariable.CLM_PASS_THRU_PER_DIEM_AMT,
 				claim.getPassThruPerDiemAmount(), eob);
-		TransformerTestUtils.assertAdjudicationTotalAmountEquals(CcwCodebookVariable.NCH_PROFNL_CMPNT_CHRG_AMT,
+		TransformerTestUtils.assertExtensionQuantityEquivalent(CcwCodebookVariable.NCH_PROFNL_CMPNT_CHRG_AMT,
 				claim.getProfessionalComponentCharge(), eob);
-		TransformerTestUtils.assertAdjudicationTotalAmountEquals(CcwCodebookVariable.CLM_TOT_PPS_CPTL_AMT,
+		TransformerTestUtils.assertExtensionQuantityEquivalent(CcwCodebookVariable.CLM_TOT_PPS_CPTL_AMT,
 				claim.getClaimTotalPPSCapitalAmount(), eob);
-		TransformerTestUtils.assertAdjudicationTotalAmountEquals(CcwCodebookVariable.IME_OP_CLM_VAL_AMT,
+		TransformerTestUtils.assertExtensionQuantityEquivalent(CcwCodebookVariable.IME_OP_CLM_VAL_AMT,
 				claim.getIndirectMedicalEducationAmount(), eob);
-		TransformerTestUtils.assertAdjudicationTotalAmountEquals(CcwCodebookVariable.DSH_OP_CLM_VAL_AMT,
+		TransformerTestUtils.assertExtensionQuantityEquivalent(CcwCodebookVariable.DSH_OP_CLM_VAL_AMT,
 				claim.getDisproportionateShareAmount(), eob);
 		
 		// test common eob information between Inpatient, HHA, Hospice and SNF claims are set as expected
@@ -101,7 +101,7 @@ public final class InpatientClaimTransformerTest {
 				claim.getNoncoveredStayThroughDate(), claim.getCoveredCareThoughDate(),
 				claim.getMedicareBenefitsExhaustedDate(), claim.getDiagnosisRelatedGroupCd());
 
-		TransformerTestUtils.assertAdjudicationTotalAmountEquals(CcwCodebookVariable.NCH_DRG_OUTLIER_APRVD_PMT_AMT,
+		TransformerTestUtils.assertExtensionQuantityEquivalent(CcwCodebookVariable.NCH_DRG_OUTLIER_APRVD_PMT_AMT,
 				claim.getDrgOutlierApprovedPaymentAmount(), eob);
 
 		// Test to ensure common group fields between Inpatient, Outpatient and SNF

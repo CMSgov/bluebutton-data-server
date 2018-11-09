@@ -25,7 +25,6 @@ import org.hl7.fhir.dstu3.model.ExplanationOfBenefit.ItemComponent;
 import org.hl7.fhir.dstu3.model.ExplanationOfBenefit.SupportingInformationComponent;
 import org.hl7.fhir.dstu3.model.Extension;
 import org.hl7.fhir.dstu3.model.Identifier;
-import org.hl7.fhir.dstu3.model.Money;
 import org.hl7.fhir.dstu3.model.Observation;
 import org.hl7.fhir.dstu3.model.Period;
 import org.hl7.fhir.dstu3.model.Quantity;
@@ -72,58 +71,6 @@ import junit.framework.AssertionFailedError;
  * {@link BeneficiaryTransformer}).
  */
 final class TransformerTestUtils {
-	/**
-	 * @param categoryVariable
-	 *            the {@link CcwCodebookVariable} for the {@link Extension#getUrl()}
-	 *            to find and verify
-	 * @param expectedAmountValue
-	 *            the expected {@link Extension#getValue()} {@link Money#getValue()}
-	 *            value to verify
-	 * @param eob
-	 *            the actual {@link ExplanationOfBenefit} to verify the adjudication
-	 *            total in
-	 */
-	static void assertAdjudicationTotalAmountEquals(CcwCodebookVariable categoryVariable,
-			Optional<BigDecimal> expectedAmountValue, ExplanationOfBenefit eob) {
-		String expectedExtensionUrl = TransformerUtils.calculateVariableReferenceUrl(categoryVariable);
-		Optional<Extension> adjudicationTotalExtension = eob.getExtension().stream()
-				.filter(e -> expectedExtensionUrl.equals(e.getUrl())).findAny();
-		Assert.assertEquals(expectedAmountValue.isPresent(), adjudicationTotalExtension.isPresent());
-
-		if (expectedAmountValue.isPresent()) {
-			Assert.assertNotNull(adjudicationTotalExtension.get().getValue());
-			assertMoneyValue(expectedAmountValue.get(), (Money) adjudicationTotalExtension.get().getValue());
-		}
-	}
-
-	/**
-	 * @param categoryVariable
-	 *            the {@link CcwCodebookVariable} for the {@link Extension#getUrl()}
-	 *            to find and verify
-	 * @param expectedAmountValue
-	 *            the expected {@link Extension#getValue()} {@link Money#getValue()}
-	 *            value to verify
-	 * @param eob
-	 *            the actual {@link ExplanationOfBenefit} to verify the adjudication
-	 *            total in
-	 */
-	static void assertAdjudicationTotalAmountEquals(CcwCodebookVariable categoryVariable,
-			BigDecimal expectedAmountValue, ExplanationOfBenefit eob) {
-		assertAdjudicationTotalAmountEquals(categoryVariable, Optional.of(expectedAmountValue), eob);
-	}
-
-	/**
-	 * @param expectedAmountValue
-	 *            the expected {@link Money#getValue()}
-	 * @param actualValue
-	 *            the actual {@link Money} to verify
-	 */
-	private static void assertMoneyValue(BigDecimal expectedAmountValue, Money actualValue) {
-		Assert.assertEquals(TransformerConstants.CODING_MONEY, actualValue.getSystem());
-		Assert.assertEquals(TransformerConstants.CODED_MONEY_USD, actualValue.getCode());
-		assertEquivalent(expectedAmountValue, actualValue.getValue());
-	}
-
 	/**
 	 * @param ccwVariable
 	 *            the {@link CcwCodebookVariable} for the
@@ -1231,10 +1178,10 @@ final class TransformerTestUtils {
 		Assert.assertEquals(nonUtilizationDayCount.intValue(),
 				benefit_CLM_NON_UTLZTN_DAYS_CNT.getUsedUnsignedIntType().getValue().intValue());
 
-		TransformerTestUtils.assertAdjudicationTotalAmountEquals(CcwCodebookVariable.NCH_BENE_IP_DDCTBL_AMT,
+		TransformerTestUtils.assertExtensionQuantityEquivalent(CcwCodebookVariable.NCH_BENE_IP_DDCTBL_AMT,
 				deductibleAmount, eob);
 
-		TransformerTestUtils.assertAdjudicationTotalAmountEquals(CcwCodebookVariable.NCH_BENE_PTA_COINSRNC_LBLTY_AMT,
+		TransformerTestUtils.assertExtensionQuantityEquivalent(CcwCodebookVariable.NCH_BENE_PTA_COINSRNC_LBLTY_AMT,
 				partACoinsuranceLiabilityAmount, eob);
 
 		SupportingInformationComponent nchBloodPntsFrnshdQtyInfo = TransformerTestUtils
@@ -1242,39 +1189,39 @@ final class TransformerTestUtils {
 		Assert.assertEquals(bloodPintsFurnishedQty.intValueExact(),
 				nchBloodPntsFrnshdQtyInfo.getValueQuantity().getValue().intValueExact());
 
-		TransformerTestUtils.assertAdjudicationTotalAmountEquals(CcwCodebookVariable.NCH_IP_NCVRD_CHRG_AMT,
+		TransformerTestUtils.assertExtensionQuantityEquivalent(CcwCodebookVariable.NCH_IP_NCVRD_CHRG_AMT,
 				noncoveredCharge, eob);
 
-		TransformerTestUtils.assertAdjudicationTotalAmountEquals(CcwCodebookVariable.NCH_IP_TOT_DDCTN_AMT,
+		TransformerTestUtils.assertExtensionQuantityEquivalent(CcwCodebookVariable.NCH_IP_TOT_DDCTN_AMT,
 				totalDeductionAmount, eob);
 
 		if (claimPPSCapitalDisproportionateShareAmt.isPresent()) {
-			TransformerTestUtils.assertAdjudicationTotalAmountEquals(CcwCodebookVariable.CLM_PPS_CPTL_DSPRPRTNT_SHR_AMT,
+			TransformerTestUtils.assertExtensionQuantityEquivalent(CcwCodebookVariable.CLM_PPS_CPTL_DSPRPRTNT_SHR_AMT,
 					claimPPSCapitalDisproportionateShareAmt, eob);
 		}
 
 		if (claimPPSCapitalExceptionAmount.isPresent()) {
-			TransformerTestUtils.assertAdjudicationTotalAmountEquals(CcwCodebookVariable.CLM_PPS_CPTL_EXCPTN_AMT,
+			TransformerTestUtils.assertExtensionQuantityEquivalent(CcwCodebookVariable.CLM_PPS_CPTL_EXCPTN_AMT,
 					claimPPSCapitalExceptionAmount, eob);
 		}
 
 		if (claimPPSCapitalFSPAmount.isPresent()) {
-			TransformerTestUtils.assertAdjudicationTotalAmountEquals(CcwCodebookVariable.CLM_PPS_CPTL_FSP_AMT,
+			TransformerTestUtils.assertExtensionQuantityEquivalent(CcwCodebookVariable.CLM_PPS_CPTL_FSP_AMT,
 					claimPPSCapitalFSPAmount, eob);
 		}
 
 		if (claimPPSCapitalIMEAmount.isPresent()) {
-			TransformerTestUtils.assertAdjudicationTotalAmountEquals(CcwCodebookVariable.CLM_PPS_CPTL_IME_AMT,
+			TransformerTestUtils.assertExtensionQuantityEquivalent(CcwCodebookVariable.CLM_PPS_CPTL_IME_AMT,
 					claimPPSCapitalIMEAmount, eob);
 		}
 
 		if (claimPPSCapitalOutlierAmount.isPresent()) {
-			TransformerTestUtils.assertAdjudicationTotalAmountEquals(CcwCodebookVariable.CLM_PPS_CPTL_OUTLIER_AMT,
+			TransformerTestUtils.assertExtensionQuantityEquivalent(CcwCodebookVariable.CLM_PPS_CPTL_OUTLIER_AMT,
 					claimPPSCapitalOutlierAmount, eob);
 		}
 
 		if (claimPPSOldCapitalHoldHarmlessAmount.isPresent()) {
-			TransformerTestUtils.assertAdjudicationTotalAmountEquals(CcwCodebookVariable.CLM_PPS_OLD_CPTL_HLD_HRMLS_AMT,
+			TransformerTestUtils.assertExtensionQuantityEquivalent(CcwCodebookVariable.CLM_PPS_OLD_CPTL_HLD_HRMLS_AMT,
 					claimPPSOldCapitalHoldHarmlessAmount, eob);
 		}
 	}
@@ -1550,13 +1497,13 @@ final class TransformerTestUtils {
 
 		assertExtensionIdentifierEquals(CcwCodebookVariable.CARR_NUM, carrierNumber, eob);
 		assertExtensionIdentifierEquals(CcwCodebookVariable.CLM_CLNCL_TRIL_NUM, clinicalTrialNumber, eob);
-		assertAdjudicationTotalAmountEquals(CcwCodebookVariable.CARR_CLM_CASH_DDCTBL_APLD_AMT,
+		assertExtensionQuantityEquivalent(CcwCodebookVariable.CARR_CLM_CASH_DDCTBL_APLD_AMT,
 				beneficiaryPartBDeductAmount, eob);
-		assertAdjudicationTotalAmountEquals(CcwCodebookVariable.NCH_CLM_PRVDR_PMT_AMT, providerPaymentAmount, eob);
-		assertAdjudicationTotalAmountEquals(CcwCodebookVariable.NCH_CLM_BENE_PMT_AMT, beneficiaryPaymentAmount, eob);
-		assertAdjudicationTotalAmountEquals(CcwCodebookVariable.NCH_CARR_CLM_SBMTD_CHRG_AMT, submittedChargeAmount,
+		assertExtensionQuantityEquivalent(CcwCodebookVariable.NCH_CLM_PRVDR_PMT_AMT, providerPaymentAmount, eob);
+		assertExtensionQuantityEquivalent(CcwCodebookVariable.NCH_CLM_BENE_PMT_AMT, beneficiaryPaymentAmount, eob);
+		assertExtensionQuantityEquivalent(CcwCodebookVariable.NCH_CARR_CLM_SBMTD_CHRG_AMT, submittedChargeAmount,
 				eob);
-		assertAdjudicationTotalAmountEquals(CcwCodebookVariable.NCH_CARR_CLM_ALOWD_AMT, allowedChargeAmount, eob);
+		assertExtensionQuantityEquivalent(CcwCodebookVariable.NCH_CARR_CLM_ALOWD_AMT, allowedChargeAmount, eob);
 	}
 
 	/**
@@ -1862,7 +1809,7 @@ final class TransformerTestUtils {
 	static void assertEobCommonGroupInpOutSNFEquals(ExplanationOfBenefit eob,
 			BigDecimal bloodDeductibleLiabilityAmount, Optional<String> operatingPhysicianNpi,
 			Optional<String> otherPhysicianNpi, char claimQueryCode, Optional<Character> mcoPaidSw) {
-		TransformerTestUtils.assertAdjudicationTotalAmountEquals(CcwCodebookVariable.NCH_BENE_BLOOD_DDCTBL_LBLTY_AM,
+		TransformerTestUtils.assertExtensionQuantityEquivalent(CcwCodebookVariable.NCH_BENE_BLOOD_DDCTBL_LBLTY_AM,
 				bloodDeductibleLiabilityAmount, eob);
 
 		TransformerTestUtils.assertCareTeamEquals(operatingPhysicianNpi.get(), ClaimCareteamrole.ASSIST, eob);
