@@ -39,7 +39,6 @@ import com.codahale.metrics.MetricRegistry;
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.rest.client.IGenericClient;
 import ca.uhn.fhir.rest.client.interceptor.LoggingInterceptor;
-import ca.uhn.fhir.rest.server.EncodingEnum;
 import gov.hhs.cms.bluebutton.data.model.rif.Beneficiary;
 import gov.hhs.cms.bluebutton.data.model.rif.RifFileEvent;
 import gov.hhs.cms.bluebutton.data.model.rif.RifFileRecords;
@@ -120,8 +119,6 @@ public final class ServerTestUtils {
 		loggingInterceptor.setLogRequestBody(LOGGER.isTraceEnabled());
 		loggingInterceptor.setLogResponseBody(LOGGER.isTraceEnabled());
 		client.registerInterceptor(loggingInterceptor);
-
-		client.setEncoding(EncodingEnum.JSON);
 
 		return client;
 	}
