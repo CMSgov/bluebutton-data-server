@@ -63,7 +63,7 @@ final class DMEClaimTransformer {
 
 		// TODO is this column nullable? If so, why isn't it Optional?
 		if (claimGroup.getPrimaryPayerPaidAmount() != null) {
-			TransformerUtils.addValueQuantity(eob, CcwCodebookVariable.PRPAYAMT,
+			TransformerUtils.addAdjudicationTotal(eob, CcwCodebookVariable.PRPAYAMT,
 					claimGroup.getPrimaryPayerPaidAmount());
 		}
 

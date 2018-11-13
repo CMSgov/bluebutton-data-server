@@ -61,7 +61,7 @@ final class CarrierClaimTransformer {
 		TransformerUtils.mapEobType(eob, ClaimType.CARRIER, Optional.of(claimGroup.getNearLineRecordIdCode()), 
 				Optional.of(claimGroup.getClaimTypeCode()));
 
-		TransformerUtils.addValueQuantity(eob, CcwCodebookVariable.PRPAYAMT,
+		TransformerUtils.addAdjudicationTotal(eob, CcwCodebookVariable.PRPAYAMT,
 				claimGroup.getPrimaryPayerPaidAmount());
 
 		// Common group level fields between Carrier and DME

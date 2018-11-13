@@ -65,31 +65,31 @@ final class OutpatientClaimTransformer {
 
 		// TODO If this is actually nullable, should be Optional.
 		if (claimGroup.getProfessionalComponentCharge() != null) {
-			TransformerUtils.addValueQuantity(eob, CcwCodebookVariable.NCH_PROFNL_CMPNT_CHRG_AMT,
+			TransformerUtils.addAdjudicationTotal(eob, CcwCodebookVariable.NCH_PROFNL_CMPNT_CHRG_AMT,
 					claimGroup.getProfessionalComponentCharge());
 		}
 
 		// TODO If this is actually nullable, should be Optional.
 		if (claimGroup.getDeductibleAmount() != null) {
-			TransformerUtils.addValueQuantity(eob, CcwCodebookVariable.NCH_BENE_PTB_DDCTBL_AMT,
+			TransformerUtils.addAdjudicationTotal(eob, CcwCodebookVariable.NCH_BENE_PTB_DDCTBL_AMT,
 					claimGroup.getDeductibleAmount());
 		}
 
 		// TODO If this is actually nullable, should be Optional.
 		if (claimGroup.getCoinsuranceAmount() != null) {
-			TransformerUtils.addValueQuantity(eob, CcwCodebookVariable.NCH_BENE_PTB_COINSRNC_AMT,
+			TransformerUtils.addAdjudicationTotal(eob, CcwCodebookVariable.NCH_BENE_PTB_COINSRNC_AMT,
 					claimGroup.getCoinsuranceAmount());
 		}
 
 		// TODO If this is actually nullable, should be Optional.
 		if (claimGroup.getProviderPaymentAmount() != null) {
-			TransformerUtils.addValueQuantity(eob, CcwCodebookVariable.CLM_OP_PRVDR_PMT_AMT,
+			TransformerUtils.addAdjudicationTotal(eob, CcwCodebookVariable.CLM_OP_PRVDR_PMT_AMT,
 					claimGroup.getProviderPaymentAmount());
 		}
 
 		// TODO If this is actually nullable, should be Optional.
 		if (claimGroup.getBeneficiaryPaymentAmount() != null) {
-			TransformerUtils.addValueQuantity(eob, CcwCodebookVariable.CLM_OP_BENE_PMT_AMT,
+			TransformerUtils.addAdjudicationTotal(eob, CcwCodebookVariable.CLM_OP_BENE_PMT_AMT,
 					claimGroup.getBeneficiaryPaymentAmount());
 		}
 

@@ -72,7 +72,7 @@ public final class DMEClaimTransformerTest {
 				claim.getBeneficiaryPaymentAmount(), claim.getSubmittedChargeAmount(),
 				claim.getAllowedChargeAmount());
 
-		TransformerTestUtils.assertExtensionQuantityEquivalent(CcwCodebookVariable.PRPAYAMT,
+		TransformerTestUtils.assertAdjudicationTotalEquivalent(CcwCodebookVariable.PRPAYAMT,
 				claim.getPrimaryPayerPaidAmount(), eob);
 
 		Assert.assertEquals(3, eob.getDiagnosis().size());
