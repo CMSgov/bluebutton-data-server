@@ -156,14 +156,13 @@ public final class TransformerUtils {
 
 	/**
 	 * @param eob
-	 *            the {@link ExplanationOfBenefit} that the primary payer paid
-	 *            amount should be part of
+	 *            the {@link ExplanationOfBenefit} that the adjudication total
+	 *            should be part of
 	 * @param categoryVariable
 	 *            the {@link CcwCodebookVariable} to map to the adjudication's
 	 *            <code>category</code>
 	 * @param amountValue
-	 *            the {@link Quantity#getValue()} for the primary payer paid amount
-	 *            total
+	 *            the {@link Quantity#getValue()} for the adjudication total
 	 * @return the new {@link BenefitBalanceComponent}, which will have already been
 	 *         added to the appropriate
 	 *         {@link ExplanationOfBenefit#getBenefitBalance()} entry
