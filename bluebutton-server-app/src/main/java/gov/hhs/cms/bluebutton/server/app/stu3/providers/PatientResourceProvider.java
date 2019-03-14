@@ -15,9 +15,14 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 
+import org.hl7.fhir.dstu3.model.Bundle;
+import org.hl7.fhir.dstu3.model.Bundle.BundleEntryComponent;
+import org.hl7.fhir.dstu3.model.Bundle.BundleLinkComponent;
+import org.hl7.fhir.dstu3.model.ExplanationOfBenefit;
 import org.hl7.fhir.dstu3.model.IdType;
 import org.hl7.fhir.dstu3.model.Identifier;
 import org.hl7.fhir.dstu3.model.Patient;
+import org.hl7.fhir.dstu3.model.Resource;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.springframework.stereotype.Component;
 
@@ -26,9 +31,11 @@ import com.codahale.metrics.Timer;
 
 import ca.uhn.fhir.model.primitive.IdDt;
 import ca.uhn.fhir.rest.annotation.IdParam;
+import ca.uhn.fhir.rest.annotation.OptionalParam;
 import ca.uhn.fhir.rest.annotation.Read;
 import ca.uhn.fhir.rest.annotation.RequiredParam;
 import ca.uhn.fhir.rest.annotation.Search;
+import ca.uhn.fhir.rest.method.RequestDetails;
 import ca.uhn.fhir.rest.param.TokenParam;
 import ca.uhn.fhir.rest.server.IResourceProvider;
 import ca.uhn.fhir.rest.server.exceptions.InvalidRequestException;
@@ -134,23 +141,30 @@ public final class PatientResourceProvider implements IResourceProvider {
 
 	/**
 	 * <p>
-	 * Adds support for the FHIR "search" operation for {@link Patient}s,
-	 * allowing users to search by {@link Patient#getId()}.
+	 * Adds support for the FHIR "search" operation for {@link Patient}s, allowing
+	 * users to search by {@link Patient#getId()}.
 	 * <p>
-	 * The {@link Search} annotation indicates that this method supports the
-	 * search operation. There may be many different methods annotated with this
+	 * The {@link Search} annotation indicates that this method supports the search
+	 * operation. There may be many different methods annotated with this
 	 * {@link Search} annotation, to support many different search criteria.
 	 * </p>
 	 * 
 	 * @param logicalId
 	 *            a {@link TokenParam} (with no system, per the spec) for the
-	 *            {@link Patient#getId()} to try and find a matching
-	 *            {@link Patient} for
+	 *            {@link Patient#getId()} to try and find a matching {@link Patient}
+	 *            for
+	 * @param startIndex
+	 *            an {@link OptionalParam} for the startIndex (or offset) used to
+	 *            determine pagination
+	 * @param requestDetails
+	 *            a {@link RequestDetails} containing the details of the request
+	 *            URL, used to parse out pagination values
 	 * @return Returns a {@link List} of {@link Patient}s, which may contain
 	 *         multiple matching resources, or may also be empty.
 	 */
 	@Search
-	public List<Patient> searchByLogicalId(@RequiredParam(name = Patient.SP_RES_ID) TokenParam logicalId) {
+	public Bundle searchByLogicalId(@RequiredParam(name = Patient.SP_RES_ID) TokenParam logicalId,
+			@OptionalParam(name = "startIndex") String startIndex, RequestDetails requestDetails) {
 		if (logicalId.getQueryParameterQualifier() != null)
 			throw new InvalidRequestException(
 					"Unsupported query parameter qualifier: " + logicalId.getQueryParameterQualifier());
@@ -159,11 +173,33 @@ public final class PatientResourceProvider implements IResourceProvider {
 		if (logicalId.getValueNotNull().isEmpty())
 			throw new InvalidRequestException("Unsupported query parameter value: " + logicalId.getValue());
 
+		List<Patient> patients;
 		try {
-			return Arrays.asList(read(new IdType(logicalId.getValue())));
+			patients = Arrays.asList(read(new IdType(logicalId.getValue())));
 		} catch (ResourceNotFoundException e) {
-			return new LinkedList<>();
+			patients = new LinkedList<>();
 		}
+
+		Bundle bundle = new Bundle();
+		PagingArguments pagingArgs = new PagingArguments(requestDetails);
+		if (pagingArgs.isPagingRequested()) {
+			/*
+			 * FIXME: Due to a bug in HAPI-FHIR described here
+			 * https://github.com/jamesagnew/hapi-fhir/issues/1074 paging for count=0 is not
+			 * working correctly.
+			 */
+				int numToReturn = Math.min(pagingArgs.getPageSize(), patients.size());
+				List<Patient> resources = patients.subList(pagingArgs.getStartIndex(),
+						pagingArgs.getStartIndex() + numToReturn);
+				bundle = addResourcesToBundle(bundle, resources);
+				addPagingLinks(bundle, pagingArgs, "&_id=", logicalId.getValue(), patients.size());
+		} else {
+			bundle = addResourcesToBundle(bundle, patients);
+		}
+
+		bundle.setTotal(patients.size());
+
+		return bundle;
 	}
 
 	/**
@@ -190,11 +226,18 @@ public final class PatientResourceProvider implements IResourceProvider {
 	 *            an {@link Identifier} {@link TokenParam} for the
 	 *            {@link Patient#getIdentifier()} to try and find a matching
 	 *            {@link Patient} for
+	 * @param startIndex
+	 *            an {@link OptionalParam} for the startIndex (or offset) used to
+	 *            determine pagination
+	 * @param requestDetails
+	 *            a {@link RequestDetails} containing the details of the request
+	 *            URL, used to parse out pagination values
 	 * @return Returns a {@link List} of {@link Patient}s, which may contain
 	 *         multiple matching resources, or may also be empty.
 	 */
 	@Search
-	public List<Patient> searchByIdentifier(@RequiredParam(name = Patient.SP_IDENTIFIER) TokenParam identifier) {
+	public Bundle searchByIdentifier(@RequiredParam(name = Patient.SP_IDENTIFIER) TokenParam identifier,
+			@OptionalParam(name = "startIndex") String startIndex, RequestDetails requestDetails) {
 		if (identifier.getQueryParameterQualifier() != null)
 			throw new InvalidRequestException(
 					"Unsupported query parameter qualifier: " + identifier.getQueryParameterQualifier());
@@ -202,11 +245,33 @@ public final class PatientResourceProvider implements IResourceProvider {
 		if (!SUPPORTED_HICN_HASH_IDENTIFIER_SYSTEMS.contains(identifier.getSystem()))
 			throw new InvalidRequestException("Unsupported identifier system: " + identifier.getSystem());
 
+		List<Patient> patients;
 		try {
-			return Arrays.asList(queryDatabaseByHicnHash(identifier.getValue()));
+			patients = Arrays.asList(queryDatabaseByHicnHash(identifier.getValue()));
 		} catch (NoResultException e) {
-			return new LinkedList<>();
+			patients = new LinkedList<>();
 		}
+
+		Bundle bundle = new Bundle();
+		PagingArguments pagingArgs = new PagingArguments(requestDetails);
+		if (pagingArgs.isPagingRequested()) {
+			/*
+			 * FIXME: Due to a bug in HAPI-FHIR described here
+			 * https://github.com/jamesagnew/hapi-fhir/issues/1074 paging for count=0 is not
+			 * working correctly.
+			 */
+			int numToReturn = Math.min(pagingArgs.getPageSize(), patients.size());
+			List<Patient> resources = patients.subList(pagingArgs.getStartIndex(),
+					pagingArgs.getStartIndex() + numToReturn);
+			bundle = addResourcesToBundle(bundle, resources);
+			addPagingLinks(bundle, pagingArgs, "&identifier=", identifier.getValue(), patients.size());
+		} else {
+			bundle = addResourcesToBundle(bundle, patients);
+		}
+
+		bundle.setTotal(patients.size());
+
+		return bundle;
 	}
 
 	/**
@@ -275,5 +340,78 @@ public final class PatientResourceProvider implements IResourceProvider {
 
 		Patient patient = BeneficiaryTransformer.transform(metricRegistry, beneficiary);
 		return patient;
+	}
+
+	/**
+	 * @param bunlde
+	 *            a {@link Bundle} to add the list of {@link ExplanationOfBenefit}
+	 *            resources to.
+	 * @param list
+	 *            a list of {@link Patient}, of which a portion will be added to the
+	 *            bundle based on the paging values
+	 * @return Returns a {@link Bundle} of {@link ExplanationOfBenefit}s, which may
+	 *         contain multiple matching resources, or may also be empty.
+	 */
+	private Bundle addResourcesToBundle(Bundle bundle, List<Patient> patients) {
+		for (IBaseResource res : patients) {
+			BundleEntryComponent entry = bundle.addEntry();
+			entry.setResource((Resource) res);
+		}
+
+		return bundle;
+	}
+
+	/**
+	 * @param bundle
+	 *            the {@link Bundle} to which links are being added
+	 * @param pagingArgs
+	 *            the {@link PagingArguments} containing the parsed parameters for
+	 *            the paging URLs
+	 * @param beneficiaryId
+	 *            the {@link Beneficiary#getBeneficiaryId()} to include in the links
+	 * @param numTotalResults
+	 *            the number of total resources matching the
+	 *            {@link Beneficiary#getBeneficiaryId()}
+	 */
+	private void addPagingLinks(Bundle bundle, PagingArguments pagingArgs, String searchByDesc, String identifier,
+			int numTotalResults) {
+
+		Integer pageSize = pagingArgs.getPageSize();
+		Integer startIndex = pagingArgs.getStartIndex();
+		String serverBase = pagingArgs.getServerBase();
+
+		bundle.addLink(new BundleLinkComponent().setRelation("first")
+				.setUrl(createPagingLink(serverBase, searchByDesc, identifier, 0, pageSize)));
+
+		if (startIndex + pageSize < numTotalResults) {
+			bundle.addLink(new BundleLinkComponent().setRelation(Bundle.LINK_NEXT)
+					.setUrl(createPagingLink(serverBase, searchByDesc, identifier, startIndex + pageSize, pageSize)));
+		}
+
+		if (startIndex > 0) {
+			int start = Math.max(0, startIndex - pageSize);
+			bundle.addLink(new BundleLinkComponent().setRelation(Bundle.LINK_PREV)
+					.setUrl(createPagingLink(serverBase, searchByDesc, identifier, start, pageSize)));
+		}
+
+		if (numTotalResults > pageSize) {
+			int start = (numTotalResults / pageSize - 1) * pageSize;
+			int finalPageSize = numTotalResults - start;
+			bundle.addLink(new BundleLinkComponent().setRelation("last")
+					.setUrl(createPagingLink(serverBase, searchByDesc, identifier, start, finalPageSize)));
+		}
+	}
+
+	/**
+	 * @return Returns the URL string for a paging link.
+	 */
+	private String createPagingLink(String theServerBase, String descriptor, String id, int startIndex, int theCount) {
+		StringBuilder b = new StringBuilder();
+		b.append(theServerBase + "/Patient?");
+		b.append("_count=" + theCount);
+		b.append("&startIndex=" + startIndex);
+		b.append(descriptor + id);
+
+		return b.toString();
 	}
 }
