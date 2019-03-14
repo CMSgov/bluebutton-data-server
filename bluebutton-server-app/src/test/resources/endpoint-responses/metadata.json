@@ -1,7 +1,7 @@
 {
   "resourceType" : "CapabilityStatement",
   "status" : "active",
-  "date" : "2019-03-14T10:14:49-05:00",
+  "date" : "2019-03-12T12:30:26-05:00",
   "publisher" : "Centers for Medicare & Medicaid Services",
   "kind" : "instance",
   "software" : {
@@ -9,7 +9,8 @@
     "version" : "1.0.0-SNAPSHOT"
   },
   "implementation" : {
-    "description" : "gov.hhs.cms.bluebutton.fhir:bluebutton-server-app"
+    "description" : "gov.hhs.cms.bluebutton.fhir:bluebutton-server-app",
+    "url" : "https://localhost:8482/v1/fhir"
   },
   "fhirVersion" : "3.0.1",
   "acceptUnknown" : "extensions",
@@ -19,7 +20,7 @@
     "resource" : [ {
       "type" : "Coverage",
       "profile" : {
-        "reference" : "http://hl7.org/fhir/Profile/Coverage"
+        "reference" : "http://hl7.org/fhir/StructureDefinition/Coverage"
       },
       "interaction" : [ {
         "code" : "read"
@@ -34,7 +35,7 @@
     }, {
       "type" : "ExplanationOfBenefit",
       "profile" : {
-        "reference" : "http://hl7.org/fhir/Profile/ExplanationOfBenefit"
+        "reference" : "http://hl7.org/fhir/StructureDefinition/ExplanationOfBenefit"
       },
       "interaction" : [ {
         "code" : "read"
@@ -52,7 +53,7 @@
     }, {
       "type" : "OperationDefinition",
       "profile" : {
-        "reference" : "http://hl7.org/fhir/Profile/OperationDefinition"
+        "reference" : "http://hl7.org/fhir/StructureDefinition/OperationDefinition"
       },
       "interaction" : [ {
         "code" : "read"
@@ -60,7 +61,7 @@
     }, {
       "type" : "Patient",
       "profile" : {
-        "reference" : "http://hl7.org/fhir/Profile/Patient"
+        "reference" : "http://hl7.org/fhir/StructureDefinition/Patient"
       },
       "interaction" : [ {
         "code" : "read"
@@ -85,7 +86,7 @@
     }, {
       "type" : "StructureDefinition",
       "profile" : {
-        "reference" : "http://hl7.org/fhir/Profile/StructureDefinition"
+        "reference" : "http://hl7.org/fhir/StructureDefinition/StructureDefinition"
       },
       "interaction" : [ {
         "code" : "read"
