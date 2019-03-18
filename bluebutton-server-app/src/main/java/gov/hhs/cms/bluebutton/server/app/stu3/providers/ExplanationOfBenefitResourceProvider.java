@@ -38,7 +38,6 @@ import ca.uhn.fhir.rest.annotation.Search;
 import ca.uhn.fhir.rest.api.server.RequestDetails;
 import ca.uhn.fhir.rest.param.ReferenceParam;
 import ca.uhn.fhir.rest.server.IResourceProvider;
-import ca.uhn.fhir.rest.server.exceptions.InvalidRequestException;
 import ca.uhn.fhir.rest.server.exceptions.ResourceNotFoundException;
 import gov.hhs.cms.bluebutton.data.model.rif.Beneficiary;
 
@@ -207,12 +206,11 @@ public final class ExplanationOfBenefitResourceProvider implements IResourceProv
 		PagingArguments pagingArgs = new PagingArguments(requestDetails);
 		if (pagingArgs.isPagingRequested()) {
 			/*
-			 * A page size of 0 is odd enough that we should throw an exception.
+			 * FIXME: Due to a bug in HAPI-FHIR described here
+			 * https://github.com/jamesagnew/hapi-fhir/issues/1074 paging for count=0 is not
+			 * working correctly. Review bluebutton-data-server PR #129 for necessary code
+			 * changes when this issue is resolved.
 			 */
-			if (pagingArgs.getPageSize() == 0) {
-				throw new InvalidRequestException("Invalid request - the page size should not be zero.");
-			}
-
 			int numToReturn = Math.min(pagingArgs.getPageSize(), eobs.size());
 			List<ExplanationOfBenefit> resources = eobs.subList(pagingArgs.getStartIndex(),
 					pagingArgs.getStartIndex() + numToReturn);
@@ -285,19 +283,29 @@ public final class ExplanationOfBenefitResourceProvider implements IResourceProv
 		Integer startIndex = pagingArgs.getStartIndex();
 		String serverBase = pagingArgs.getServerBase();
 
+		if (startIndex > 0) {
+			bundle.addLink(new BundleLinkComponent().setRelation("first")
+					.setUrl(createPagingLink(serverBase, beneficiaryId, 0, pageSize)));
+		}
+
 		if (startIndex + pageSize < numTotalResults) {
 			bundle.addLink(new BundleLinkComponent().setRelation(Bundle.LINK_NEXT)
 					.setUrl(createPagingLink(serverBase, beneficiaryId, startIndex + pageSize, pageSize)));
-
-			int start = (numTotalResults / pageSize - 1) * pageSize;
-			bundle.addLink(new BundleLinkComponent().setRelation("last")
-					.setUrl(createPagingLink(serverBase, beneficiaryId, start, pageSize)));
 		}
 
-		if (startIndex > 0) {
-			int start = Math.max(0, startIndex - pageSize);
+		if (startIndex - pageSize >= 0) {
 			bundle.addLink(new BundleLinkComponent().setRelation(Bundle.LINK_PREV)
-					.setUrl(createPagingLink(serverBase, beneficiaryId, start, pageSize)));
+					.setUrl(createPagingLink(serverBase, beneficiaryId, startIndex - pageSize, pageSize)));
+		}
+
+		/*
+		 * This formula rounds numTotalResults down to the nearest multiple of pageSize
+		 * that's less than and not equal to numTotalResults
+		 */
+		int lastIndex = (numTotalResults - 1) / pageSize * pageSize;
+		if (startIndex < lastIndex) {
+			bundle.addLink(new BundleLinkComponent().setRelation("last")
+					.setUrl(createPagingLink(serverBase, beneficiaryId, lastIndex, pageSize)));
 		}
 	}
 
