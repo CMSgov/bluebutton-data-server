@@ -19,7 +19,6 @@ import javax.persistence.metamodel.SingularAttribute;
 
 import org.hl7.fhir.dstu3.model.Bundle;
 import org.hl7.fhir.dstu3.model.Bundle.BundleEntryComponent;
-import org.hl7.fhir.dstu3.model.Bundle.BundleLinkComponent;
 import org.hl7.fhir.dstu3.model.ExplanationOfBenefit;
 import org.hl7.fhir.dstu3.model.IdType;
 import org.hl7.fhir.dstu3.model.Resource;
@@ -215,7 +214,7 @@ public final class ExplanationOfBenefitResourceProvider implements IResourceProv
 			List<ExplanationOfBenefit> resources = eobs.subList(pagingArgs.getStartIndex(),
 					pagingArgs.getStartIndex() + numToReturn);
 			bundle = addResourcesToBundle(bundle, resources);
-			addPagingLinks(bundle, pagingArgs, beneficiaryId, eobs.size());
+			pagingArgs.addPagingLinks(bundle, "/ExplanationOfBenefit?", "&patient=", beneficiaryId, eobs.size());
 		} else {
 			bundle = addResourcesToBundle(bundle, eobs);
 		}
@@ -263,63 +262,6 @@ public final class ExplanationOfBenefitResourceProvider implements IResourceProv
 		}
 
 		return bundle;
-	}
-
-	/**
-	 * @param bundle
-	 *            the {@link Bundle} to which links are being added
-	 * @param pagingArgs
-	 *            the {@link PagingArguments} containing the parsed parameters for
-	 *            the paging URLs
-	 * @param beneficiaryId
-	 *            the {@link Beneficiary#getBeneficiaryId()} to include in the links
-	 * @param numTotalResults
-	 *            the number of total resources matching the
-	 *            {@link Beneficiary#getBeneficiaryId()}
-	 */
-	private void addPagingLinks(Bundle bundle, PagingArguments pagingArgs, String beneficiaryId, int numTotalResults) {
-
-		Integer pageSize = pagingArgs.getPageSize();
-		Integer startIndex = pagingArgs.getStartIndex();
-		String serverBase = pagingArgs.getServerBase();
-
-		if (startIndex > 0) {
-			bundle.addLink(new BundleLinkComponent().setRelation("first")
-					.setUrl(createPagingLink(serverBase, beneficiaryId, 0, pageSize)));
-		}
-
-		if (startIndex + pageSize < numTotalResults) {
-			bundle.addLink(new BundleLinkComponent().setRelation(Bundle.LINK_NEXT)
-					.setUrl(createPagingLink(serverBase, beneficiaryId, startIndex + pageSize, pageSize)));
-		}
-
-		if (startIndex - pageSize >= 0) {
-			bundle.addLink(new BundleLinkComponent().setRelation(Bundle.LINK_PREV)
-					.setUrl(createPagingLink(serverBase, beneficiaryId, startIndex - pageSize, pageSize)));
-		}
-
-		/*
-		 * This formula rounds numTotalResults down to the nearest multiple of pageSize
-		 * that's less than and not equal to numTotalResults
-		 */
-		int lastIndex = (numTotalResults - 1) / pageSize * pageSize;
-		if (startIndex < lastIndex) {
-			bundle.addLink(new BundleLinkComponent().setRelation("last")
-					.setUrl(createPagingLink(serverBase, beneficiaryId, lastIndex, pageSize)));
-		}
-	}
-
-	/**
-	 * @return Returns the URL string for a paging link.
-	 */
-	private String createPagingLink(String theServerBase, String patientId, int startIndex, int theCount) {
-		StringBuilder b = new StringBuilder();
-		b.append(theServerBase + "/ExplanationOfBenefit?");
-		b.append("_count=" + theCount);
-		b.append("&startIndex=" + startIndex);
-		b.append("&patient=" + patientId);
-
-		return b.toString();
 	}
 
 	/**
