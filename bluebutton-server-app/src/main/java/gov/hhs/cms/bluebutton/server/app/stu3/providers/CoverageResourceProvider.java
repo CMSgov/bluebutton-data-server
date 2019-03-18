@@ -14,8 +14,13 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 
+import org.hl7.fhir.dstu3.model.Bundle;
+import org.hl7.fhir.dstu3.model.Bundle.BundleEntryComponent;
 import org.hl7.fhir.dstu3.model.Coverage;
+import org.hl7.fhir.dstu3.model.ExplanationOfBenefit;
 import org.hl7.fhir.dstu3.model.IdType;
+import org.hl7.fhir.dstu3.model.Patient;
+import org.hl7.fhir.dstu3.model.Resource;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.springframework.stereotype.Component;
 
@@ -24,9 +29,11 @@ import com.codahale.metrics.Timer;
 
 import ca.uhn.fhir.model.primitive.IdDt;
 import ca.uhn.fhir.rest.annotation.IdParam;
+import ca.uhn.fhir.rest.annotation.OptionalParam;
 import ca.uhn.fhir.rest.annotation.Read;
 import ca.uhn.fhir.rest.annotation.RequiredParam;
 import ca.uhn.fhir.rest.annotation.Search;
+import ca.uhn.fhir.rest.api.server.RequestDetails;
 import ca.uhn.fhir.rest.param.ReferenceParam;
 import ca.uhn.fhir.rest.server.IResourceProvider;
 import ca.uhn.fhir.rest.server.exceptions.ResourceNotFoundException;
@@ -139,17 +146,46 @@ public final class CoverageResourceProvider implements IResourceProvider {
 	 * @param beneficiary
 	 *            a {@link ReferenceParam} for the
 	 *            {@link Coverage#getBeneficiary()} to try and find matches for
+	 * @param startIndex
+	 *            an {@link OptionalParam} for the startIndex (or offset) used to
+	 *            determine pagination
+	 * @param requestDetails
+	 *            a {@link RequestDetails} containing the details of the request
+	 *            URL, used to parse out pagination values
 	 * @return Returns a {@link List} of {@link Coverage}s, which may contain
 	 *         multiple matching resources, or may also be empty.
 	 */
 	@Search
-	public List<Coverage> searchByBeneficiary(@RequiredParam(name = Coverage.SP_BENEFICIARY) ReferenceParam beneficiary) {
+	public Bundle searchByBeneficiary(@RequiredParam(name = Coverage.SP_BENEFICIARY) ReferenceParam beneficiary,
+			@OptionalParam(name = "startIndex") String startIndex, RequestDetails requestDetails) {
+		List<Coverage> coverages;
 		try {
 			Beneficiary beneficiaryEntity = findBeneficiaryById(beneficiary.getIdPart());
-			return CoverageTransformer.transform(metricRegistry, beneficiaryEntity);
+			coverages = CoverageTransformer.transform(metricRegistry, beneficiaryEntity);
 		} catch (NoResultException e) {
-			return new LinkedList<>();
+			coverages = new LinkedList<>();
 		}
+
+		Bundle bundle = new Bundle();
+		PagingArguments pagingArgs = new PagingArguments(requestDetails);
+		if (pagingArgs.isPagingRequested()) {
+			/*
+			 * FIXME: Due to a bug in HAPI-FHIR described here
+			 * https://github.com/jamesagnew/hapi-fhir/issues/1074 paging for count=0 is not
+			 * working correctly.
+			 */
+			int numToReturn = Math.min(pagingArgs.getPageSize(), coverages.size());
+			List<Coverage> resources = coverages.subList(pagingArgs.getStartIndex(),
+					pagingArgs.getStartIndex() + numToReturn);
+			bundle = addResourcesToBundle(bundle, resources);
+			pagingArgs.addPagingLinks(bundle, "/Coverage?", "&beneficiary=", beneficiary.getIdPart(), coverages.size());
+		} else {
+			bundle = addResourcesToBundle(bundle, coverages);
+		}
+
+		bundle.setTotal(coverages.size());
+
+		return bundle;
 	}
 
 	/**
@@ -178,5 +214,24 @@ public final class CoverageResourceProvider implements IResourceProvider {
 		} finally {
 			timerBeneQuery.stop();
 		}
+	}
+
+	/**
+	 * @param bunlde
+	 *            a {@link Bundle} to add the list of {@link ExplanationOfBenefit}
+	 *            resources to.
+	 * @param list
+	 *            a list of {@link Patient}, of which a portion will be added to the
+	 *            bundle based on the paging values
+	 * @return Returns a {@link Bundle} of {@link Coverage}s, which may contain
+	 *         multiple matching resources, or may also be empty.
+	 */
+	private Bundle addResourcesToBundle(Bundle bundle, List<Coverage> coverages) {
+		for (IBaseResource res : coverages) {
+			BundleEntryComponent entry = bundle.addEntry();
+			entry.setResource((Resource) res);
+		}
+
+		return bundle;
 	}
 }

@@ -31,6 +31,9 @@
         "name" : "beneficiary",
         "type" : "reference",
         "documentation" : "Covered party"
+      }, {
+        "name" : "startIndex",
+        "type" : "string"
       } ]
     }, {
       "type" : "ExplanationOfBenefit",
