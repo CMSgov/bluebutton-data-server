@@ -35,7 +35,7 @@ import ca.uhn.fhir.rest.annotation.OptionalParam;
 import ca.uhn.fhir.rest.annotation.Read;
 import ca.uhn.fhir.rest.annotation.RequiredParam;
 import ca.uhn.fhir.rest.annotation.Search;
-import ca.uhn.fhir.rest.method.RequestDetails;
+import ca.uhn.fhir.rest.api.server.RequestDetails;
 import ca.uhn.fhir.rest.param.TokenParam;
 import ca.uhn.fhir.rest.server.IResourceProvider;
 import ca.uhn.fhir.rest.server.exceptions.InvalidRequestException;
@@ -380,25 +380,29 @@ public final class PatientResourceProvider implements IResourceProvider {
 		Integer startIndex = pagingArgs.getStartIndex();
 		String serverBase = pagingArgs.getServerBase();
 
-		bundle.addLink(new BundleLinkComponent().setRelation("first")
-				.setUrl(createPagingLink(serverBase, searchByDesc, identifier, 0, pageSize)));
+		if (startIndex > 0) {
+			bundle.addLink(new BundleLinkComponent().setRelation("first")
+					.setUrl(createPagingLink(serverBase, searchByDesc, identifier, 0, pageSize)));
+		}
 
 		if (startIndex + pageSize < numTotalResults) {
 			bundle.addLink(new BundleLinkComponent().setRelation(Bundle.LINK_NEXT)
 					.setUrl(createPagingLink(serverBase, searchByDesc, identifier, startIndex + pageSize, pageSize)));
 		}
 
-		if (startIndex > 0) {
-			int start = Math.max(0, startIndex - pageSize);
+		if (startIndex - pageSize >= 0) {
 			bundle.addLink(new BundleLinkComponent().setRelation(Bundle.LINK_PREV)
-					.setUrl(createPagingLink(serverBase, searchByDesc, identifier, start, pageSize)));
+					.setUrl(createPagingLink(serverBase, searchByDesc, identifier, startIndex - pageSize, pageSize)));
 		}
 
-		if (numTotalResults > pageSize) {
-			int start = (numTotalResults / pageSize - 1) * pageSize;
-			int finalPageSize = numTotalResults - start;
+		/*
+		 * This formula rounds numTotalResults down to the nearest multiple of pageSize
+		 * that's less than and not equal to numTotalResults
+		 */
+		int lastIndex = (numTotalResults - 1) / pageSize * pageSize;
+		if (startIndex < lastIndex) {
 			bundle.addLink(new BundleLinkComponent().setRelation("last")
-					.setUrl(createPagingLink(serverBase, searchByDesc, identifier, start, finalPageSize)));
+					.setUrl(createPagingLink(serverBase, searchByDesc, identifier, lastIndex, pageSize)));
 		}
 	}
 

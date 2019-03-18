@@ -97,10 +97,9 @@ public final class PatientResourceProviderIT {
 		Assert.assertEquals(1, searchResults.getTotal());
 		
 		/*
-		 * Verify that only the first paging links exists, since there should only be
-		 * one page.
+		 * Verify that no paging links exist, since there should only be one page.
 		 */
-		Assert.assertNotNull(searchResults.getLink("first"));
+		Assert.assertNull(searchResults.getLink("first"));
 		Assert.assertNull(searchResults.getLink(Bundle.LINK_NEXT));
 		Assert.assertNull(searchResults.getLink(Bundle.LINK_PREV));
 		Assert.assertNull(searchResults.getLink("last"));
@@ -172,10 +171,9 @@ public final class PatientResourceProviderIT {
 		BeneficiaryTransformerTest.assertMatches(beneficiary, patientFromSearchResult);
 
 		/*
-		 * Verify that only the first paging links exists, since there should only be
-		 * one page.
+		 * Verify that no paging links exist, since there should only be one page.
 		 */
-		Assert.assertNotNull(searchResults.getLink("first"));
+		Assert.assertNull(searchResults.getLink("first"));
 		Assert.assertNull(searchResults.getLink(Bundle.LINK_NEXT));
 		Assert.assertNull(searchResults.getLink(Bundle.LINK_PREV));
 		Assert.assertNull(searchResults.getLink("last"));
