@@ -28,6 +28,7 @@ import gov.hhs.cms.bluebutton.data.model.rif.DMEClaim;
 import gov.hhs.cms.bluebutton.data.model.rif.HHAClaim;
 import gov.hhs.cms.bluebutton.data.model.rif.HospiceClaim;
 import gov.hhs.cms.bluebutton.data.model.rif.InpatientClaim;
+import gov.hhs.cms.bluebutton.data.model.rif.MedicareBeneficiaryIdHistory;
 import gov.hhs.cms.bluebutton.data.model.rif.OutpatientClaim;
 import gov.hhs.cms.bluebutton.data.model.rif.PartDEvent;
 import gov.hhs.cms.bluebutton.data.model.rif.SNFClaim;
@@ -377,7 +378,8 @@ public final class ExplanationOfBenefitResourceProviderIT {
 		 * number of entries in the bundle
 		 */
 		Assert.assertEquals(loadedRecords.stream().filter(r -> !(r instanceof Beneficiary))
-				.filter(r -> !(r instanceof BeneficiaryHistory)).count(), searchResults.getTotal());
+				.filter(r -> !(r instanceof BeneficiaryHistory))
+				.filter(r -> !(r instanceof MedicareBeneficiaryIdHistory)).count(), searchResults.getTotal());
 
 		/*
 		 * Verify that no paging links exist in the bundle.
@@ -464,7 +466,8 @@ public final class ExplanationOfBenefitResourceProviderIT {
 		 * number of entries in the bundle.
 		 */
 		Assert.assertEquals(loadedRecords.stream().filter(r -> !(r instanceof Beneficiary))
-				.filter(r -> !(r instanceof BeneficiaryHistory)).count(), searchResults.getTotal());
+				.filter(r -> !(r instanceof BeneficiaryHistory))
+				.filter(r -> !(r instanceof MedicareBeneficiaryIdHistory)).count(), searchResults.getTotal());
 
 		/*
 		 * Verify links to the first and last page exist.
@@ -496,7 +499,8 @@ public final class ExplanationOfBenefitResourceProviderIT {
 		 * "all of the claim records in the sample."
 		 */
 		Assert.assertEquals(loadedRecords.stream().filter(r -> !(r instanceof Beneficiary))
-				.filter(r -> !(r instanceof BeneficiaryHistory)).count(),
+				.filter(r -> !(r instanceof BeneficiaryHistory))
+				.filter(r -> !(r instanceof MedicareBeneficiaryIdHistory)).count(),
 				combinedResults.size());
 
 		/*
@@ -679,7 +683,8 @@ public final class ExplanationOfBenefitResourceProviderIT {
 		 * number of entries in the bundle
 		 */
 		Assert.assertEquals(loadedRecords.stream().filter(r -> !(r instanceof Beneficiary))
-				.filter(r -> !(r instanceof BeneficiaryHistory)).count(), searchResults.getTotal());
+				.filter(r -> !(r instanceof BeneficiaryHistory))
+				.filter(r -> !(r instanceof MedicareBeneficiaryIdHistory)).count(), searchResults.getTotal());
 
 		/*
 		 * Verify that no paging links exist in the bundle.
