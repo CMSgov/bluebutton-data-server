@@ -169,6 +169,12 @@
 			<version>${metrics.version}</version>
 		</dependency>
 		
+		<dependency>
+			<!-- Used to parse and read various CSV data resources. -->
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-csv</artifactId>
+			<version>1.2</version>
+		</dependency>
 
 		<dependency>
 			<!-- The Blue Button API runs against PostgreSQL in production. -->
@@ -378,7 +384,6 @@
 						process. -->
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>exec-maven-plugin</artifactId>
-				<version>1.5.0</version>
 				<executions>
 					<execution>
 						<id>download-fda-drug-data</id>
@@ -453,6 +458,22 @@
 											</pluginExecutionFilter>
 											<action>
 												<ignore></ignore>
+											</action>
+										</pluginExecution>
+										<pluginExecution>
+											<pluginExecutionFilter>
+												<groupId>org.codehaus.mojo</groupId>
+												<artifactId>exec-maven-plugin</artifactId>
+												<versionRange>[1.5.0,)</versionRange>
+												<goals>
+													<goal>java</goal>
+												</goals>
+											</pluginExecutionFilter>
+											<action>
+												<execute>
+													<runOnIncremental>false</runOnIncremental>
+													<runOnConfiguration>true</runOnConfiguration>
+												</execute>
 											</action>
 										</pluginExecution>
 									</pluginExecutions>
