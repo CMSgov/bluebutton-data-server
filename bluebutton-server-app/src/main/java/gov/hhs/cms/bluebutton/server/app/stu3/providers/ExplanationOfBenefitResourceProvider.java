@@ -2,6 +2,7 @@ package gov.hhs.cms.bluebutton.server.app.stu3.providers;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -210,9 +211,8 @@ public final class ExplanationOfBenefitResourceProvider implements IResourceProv
 			 * working correctly. Review bluebutton-data-server PR #129 for necessary code
 			 * changes when this issue is resolved.
 			 */
-			int numToReturn = Math.min(pagingArgs.getPageSize(), eobs.size());
-			List<ExplanationOfBenefit> resources = eobs.subList(pagingArgs.getStartIndex(),
-					pagingArgs.getStartIndex() + numToReturn);
+			int endIndex = Math.min(pagingArgs.getStartIndex() + pagingArgs.getPageSize(), eobs.size());
+			List<ExplanationOfBenefit> resources = eobs.subList(pagingArgs.getStartIndex(), endIndex);
 			bundle = addResourcesToBundle(bundle, resources);
 			pagingArgs.addPagingLinks(bundle, "/ExplanationOfBenefit?", "&patient=", beneficiaryId, eobs.size());
 		} else {
@@ -303,5 +303,22 @@ public final class ExplanationOfBenefitResourceProvider implements IResourceProv
 	private List<ExplanationOfBenefit> transformToEobs(ClaimType claimType, List<?> claims) {
 		return claims.stream().map(c -> claimType.getTransformer().apply(metricRegistry, c))
 				.collect(Collectors.toList());
+	}
+
+	/**
+	 * Removes all SAMHSA-related claims from the specified {@link List} of
+	 * {@link ExplanationOfBenefit} resources.
+	 *
+	 * @param eobs
+	 *            the {@link List} of {@link ExplanationOfBenefit} resources (i.e.
+	 *            claims) to filter
+	 */
+	private void filterSamhsa(List<ExplanationOfBenefit> eobs) {
+		ListIterator<ExplanationOfBenefit> eobsIter = eobs.listIterator();
+		while (eobsIter.hasNext()) {
+			ExplanationOfBenefit eob = eobsIter.next();
+			if (samhsaMatcher.test(eob))
+				eobsIter.remove();
+		}
 	}
 }
