@@ -2,7 +2,6 @@ package gov.hhs.cms.bluebutton.server.app.stu3.providers;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -58,7 +57,6 @@ public final class ExplanationOfBenefitResourceProvider implements IResourceProv
 
 	private EntityManager entityManager;
 	private MetricRegistry metricRegistry;
-	private SamhsaMatcher samhsaMatcher;
 
 	/**
 	 * @param entityManager
@@ -77,15 +75,6 @@ public final class ExplanationOfBenefitResourceProvider implements IResourceProv
 	@Inject
 	public void setMetricRegistry(MetricRegistry metricRegistry) {
 		this.metricRegistry = metricRegistry;
-	}
-
-	/**
-	 * @param samhsaMatcher
-	 *            the {@link SamhsaMatcher} to use
-	 */
-	@Inject
-	public void setSamhsaFilterer(SamhsaMatcher samhsaMatcher) {
-		this.samhsaMatcher = samhsaMatcher;
 	}
 
 	/**
@@ -216,9 +205,6 @@ public final class ExplanationOfBenefitResourceProvider implements IResourceProv
 		eobs.addAll(transformToEobs(ClaimType.OUTPATIENT, findClaimTypeByPatient(ClaimType.OUTPATIENT, beneficiaryId)));
 		eobs.addAll(transformToEobs(ClaimType.PDE, findClaimTypeByPatient(ClaimType.PDE, beneficiaryId)));
 		eobs.addAll(transformToEobs(ClaimType.SNF, findClaimTypeByPatient(ClaimType.SNF, beneficiaryId)));
-
-		if (Boolean.parseBoolean(excludeSamhsa) == true)
-			filterSamhsa(eobs);
 
 		eobs.sort(ExplanationOfBenefitResourceProvider::compareByClaimIdThenClaimType);
 
@@ -381,22 +367,5 @@ public final class ExplanationOfBenefitResourceProvider implements IResourceProv
 	private List<ExplanationOfBenefit> transformToEobs(ClaimType claimType, List<?> claims) {
 		return claims.stream().map(c -> claimType.getTransformer().apply(metricRegistry, c))
 				.collect(Collectors.toList());
-	}
-
-	/**
-	 * Removes all SAMHSA-related claims from the specified {@link List} of
-	 * {@link ExplanationOfBenefit} resources.
-	 *
-	 * @param eobs
-	 *            the {@link List} of {@link ExplanationOfBenefit} resources (i.e.
-	 *            claims) to filter
-	 */
-	private void filterSamhsa(List<ExplanationOfBenefit> eobs) {
-		ListIterator<ExplanationOfBenefit> eobsIter = eobs.listIterator();
-		while (eobsIter.hasNext()) {
-			ExplanationOfBenefit eob = eobsIter.next();
-			if (samhsaMatcher.test(eob))
-				eobsIter.remove();
-		}
 	}
 }
