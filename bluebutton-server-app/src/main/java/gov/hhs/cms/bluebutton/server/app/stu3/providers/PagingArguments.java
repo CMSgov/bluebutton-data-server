@@ -53,47 +53,56 @@ public final class PagingArguments {
 		return Optional.empty();
 	}
 
-	/*
-	 * @return Returns true if the pageSize or startIndex is present (i.e. paging is
-	 * requested), false if they are not present, and throws an
-	 * IllegalArgumentException if the arguments are mismatched.
+	/**
+	 * @return Returns true if the pageSize either startIndex is present (i.e.
+	 *         paging is requested), false if neither present.
 	 */
 	public boolean isPagingRequested() {
-		if (pageSize.isPresent())
+		if (pageSize.isPresent() || startIndex.isPresent())
 			return true;
-		else if (!pageSize.isPresent() && !startIndex.isPresent())
-			return false;
-		else
-			// It's better to let clients requesting mismatched options know they goofed
-			// than to try and guess their intent.
-			throw new IllegalArgumentException(
-					String.format("Mismatched paging arguments: pageSize='%s', startIndex='%s'", pageSize, startIndex));
+		return false;
 	}
 
-	/*
-	 * @return Returns the pageSize as an integer. Note: the pageSize must exist at
-	 * this point, otherwise paging would not have been requested.
+	/**
+	 * @return Returns the pageSize as an integer. Note: if the pageSize does not
+	 *         exist but the startIndex does (paging is requested) default to
+	 *         pageSize of 10.
+	 * @throws InvalidRequestException
+	 *             HTTP 400: indicates a pageSize less than 0 was provided
 	 */
 	public int getPageSize() {
 		if (!isPagingRequested())
 			throw new BadCodeMonkeyException();
+		if (!pageSize.isPresent())
+			return 10;
+		if (pageSize.isPresent())
+			if (pageSize.get() < 0)
+				throw new InvalidRequestException(String.format(
+						"HTTP 400 Bad Request: Value for startIndex cannot be negative: pageSize %s", pageSize.get()));
 		return pageSize.get();
 	}
 
-	/*
+	/**
 	 * @return Returns the startIndex as an integer. If the startIndex is not set,
-	 * return 0.
+	 *         return 0.
+	 * @throws InvalidRequestException
+	 *             HTTP 400: indicates a startIndex less than 0 was provided
 	 */
 	public int getStartIndex() {
 		if (!isPagingRequested())
 			throw new BadCodeMonkeyException();
 		if (startIndex.isPresent()) {
+			if (startIndex.get() < 0) {
+				throw new InvalidRequestException(
+						String.format("HTTP 400 Bad Request: Value for startIndex cannot be negative: startIndex %s",
+								startIndex.get()));
+			}
 			return startIndex.get();
 		}
 		return 0;
 	}
 
-	/*
+	/**
 	 * @return Returns the serverBase.
 	 */
 	public String getServerBase() {
