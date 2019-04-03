@@ -119,10 +119,8 @@ public final class PagingArguments {
 		Integer pageSize = getPageSize();
 		Integer startIndex = getStartIndex();
 
-		if (startIndex > 0) {
-			bundle.addLink(new BundleLinkComponent().setRelation("first")
-					.setUrl(createPagingLink(resource, searchByDesc, identifier, 0, pageSize)));
-		}
+		bundle.addLink(new BundleLinkComponent().setRelation("first")
+				.setUrl(createPagingLink(resource, searchByDesc, identifier, 0, pageSize)));
 
 		if (startIndex + pageSize < numTotalResults) {
 			bundle.addLink(new BundleLinkComponent().setRelation(Bundle.LINK_NEXT)
@@ -138,11 +136,14 @@ public final class PagingArguments {
 		 * This formula rounds numTotalResults down to the nearest multiple of pageSize
 		 * that's less than and not equal to numTotalResults
 		 */
-		int lastIndex = (numTotalResults - 1) / pageSize * pageSize;
-		if (startIndex < lastIndex) {
-			bundle.addLink(new BundleLinkComponent().setRelation("last")
-					.setUrl(createPagingLink(resource, searchByDesc, identifier, lastIndex, pageSize)));
+		int lastIndex;
+		try {
+			lastIndex = (numTotalResults - 1) / pageSize * pageSize;
+		} catch (ArithmeticException e) {
+			throw new InvalidRequestException(String.format("Cannot divide by zero: pageSize=%s", pageSize));
 		}
+		bundle.addLink(new BundleLinkComponent().setRelation("last")
+				.setUrl(createPagingLink(resource, searchByDesc, identifier, lastIndex, pageSize)));
 	}
 
 	/**
