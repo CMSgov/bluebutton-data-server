@@ -15,6 +15,8 @@
 			<transport-guarantee>CONFIDENTIAL</transport-guarantee>
 		</user-data-constraint>
 	</security-constraint>
+<!--
+	If we want to, we could add these rules to make these probably-safe endpoints public.
 	<security-constraint>
 		<display-name>Disable Authentication for Metrics</display-name>
 		<web-resource-collection>
@@ -29,6 +31,7 @@
 			<url-pattern>/v1/fhir/metadata</url-pattern>
 		</web-resource-collection>
 	</security-constraint>
+ -->
 <!--
 	<security-constraint>
 		<display-name>allpages</display-name>
