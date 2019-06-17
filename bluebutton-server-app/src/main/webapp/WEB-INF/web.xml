@@ -1,6 +1,61 @@
 <web-app xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	version="3.0" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee ./xsd/web-app_3_0.xsd">
 
+	<security-constraint>
+		<display-name>Require SSL and Client Authentication for All Resources (as a default)</display-name>
+		<web-resource-collection>
+			<web-resource-name>all-resources</web-resource-name>
+			<url-pattern>/*</url-pattern>
+		</web-resource-collection>
+		<auth-constraint>
+			<role-name>admin</role-name>
+			<role-name>app-bluebutton-web-server</role-name>
+		</auth-constraint>
+		<user-data-constraint>
+			<transport-guarantee>CONFIDENTIAL</transport-guarantee>
+		</user-data-constraint>
+	</security-constraint>
+	<security-constraint>
+		<display-name>Disable Authentication for Metrics</display-name>
+		<web-resource-collection>
+			<web-resource-name>metrics</web-resource-name>
+			<url-pattern>/metrics/*</url-pattern>
+		</web-resource-collection>
+	</security-constraint>
+	<security-constraint>
+		<display-name>Disable Authentication for Metadata</display-name>
+		<web-resource-collection>
+			<web-resource-name>fhir-metadata</web-resource-name>
+			<url-pattern>/v1/fhir/metadata</url-pattern>
+		</web-resource-collection>
+	</security-constraint>
+<!--
+	<security-constraint>
+		<display-name>allpages</display-name>
+		<web-resource-collection>
+			<web-resource-name>all-res</web-resource-name>
+			<description />
+			<url-pattern>/*</url-pattern>
+		</web-resource-collection>
+		<auth-constraint>
+			<description />
+			<role-name>app-bluebutton-web-server</role-name>
+		</auth-constraint>
+		<user-data-constraint>
+			<description />
+			<transport-guarantee>CONFIDENTIAL</transport-guarantee>
+		</user-data-constraint>
+	</security-constraint>
+-->
+	<login-config>
+		<auth-method>CLIENT-CERT</auth-method>
+		<realm-name>bluebutton-data-server</realm-name>
+	</login-config>
+	<security-role>
+		<description />
+		<role-name>app-bluebutton-web-server</role-name>
+	</security-role>
+
 	<!-- Adds some additional context variables that can be included in the 
 		app's logging. -->
 	<filter>

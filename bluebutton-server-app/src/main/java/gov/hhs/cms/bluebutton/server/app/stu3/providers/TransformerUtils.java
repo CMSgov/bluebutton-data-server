@@ -1300,6 +1300,7 @@ public final class TransformerUtils {
 	 *         the specified parameters
 	 */
 	static Reference referencePractitioner(String practitionerNpi) {
+		// FIXME not used everywhere that the NPI coding system is
 		return createIdentifierReference(TransformerConstants.CODING_NPI_US, practitionerNpi);
 	}
 

@@ -7,7 +7,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import ca.uhn.fhir.rest.client.api.IGenericClient;
-import ca.uhn.fhir.rest.client.exceptions.FhirClientConnectionException;
+import ca.uhn.fhir.rest.server.exceptions.ForbiddenOperationException;
 
 /**
  * Verifies that authentication works as expected.
@@ -34,7 +34,7 @@ public final class AuthenticationIT {
 	 * Verifies that clients that don't present a client certificate receive an
 	 * access denied error.
 	 */
-	@Test(expected = FhirClientConnectionException.class)
+	@Test(expected = ForbiddenOperationException.class)
 	public void accessDeniedForNoClientCert() {
 		// Construct a FHIR client using no client identity certificate.
 		IGenericClient fhirClient = ServerTestUtils.createFhirClient(Optional.empty());
@@ -50,7 +50,7 @@ public final class AuthenticationIT {
 	 * Verifies that clients that present a client certificate that is not in
 	 * the server's trust store receive an access denied error.
 	 */
-	@Test(expected = FhirClientConnectionException.class)
+	@Test(expected = ForbiddenOperationException.class)
 	public void accessDeniedForClientCertThatIsNotTrusted() {
 		/*
 		 * Construct a FHIR client using a not-trusted client identity

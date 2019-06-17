@@ -205,6 +205,7 @@ final class PartDEventTransformer {
 		 */
 
 		if (!claimGroup.getServiceProviderId().isEmpty()) {
+			// FIXME doesn't honor SRVC_PRVDR_ID_QLFYR_CD
 			eob.setOrganization(
 					TransformerUtils.createIdentifierReference(TransformerConstants.CODING_NPI_US,
 							claimGroup.getServiceProviderId()));
