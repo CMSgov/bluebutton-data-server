@@ -1,15 +1,16 @@
 package gov.hhs.cms.bluebutton.server.app.stu3.providers;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
 import javax.persistence.NoResultException;
-import javax.persistence.NonUniqueResultException;
 import javax.persistence.PersistenceContext;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -251,12 +252,13 @@ public final class PatientResourceProvider implements IResourceProvider {
 		if (hicnHash == null || hicnHash.trim().isEmpty())
 			throw new IllegalArgumentException();
 
-		/*
-		 * Beneficiaries' HICNs can change over time and those past HICNs may land in
-		 * BeneficiaryHistory records. Accordingly, we need to search for matching HICNs
-		 * in both the Beneficiary and the BeneficiaryHistory records. Once a match is
-		 * found, we return the Beneficiary data for the matched `beneficiaryId`.
-		 */
+		; /*
+			 * Beneficiaries' HICNs can change over time and those past HICNs
+			 * may land in BeneficiaryHistory records. Accordingly, we need to
+			 * search for matching HICNs in both the Beneficiary and the
+			 * BeneficiaryHistory records. Once a match is found, we return the
+			 * Beneficiary data for the matched `beneficiaryId`.
+			 */
 
 		CriteriaBuilder builder = entityManager.getCriteriaBuilder();
 		Set<String> matchingBeneficiaryIds = new HashSet<>();
@@ -271,6 +273,21 @@ public final class PatientResourceProvider implements IResourceProvider {
 		matchingBeneficiaryIds.addAll(entityManager.createQuery(beneHicnQuery).getResultList());
 		timerHicnQuery.stop();
 
+		/*
+		 * Found only ONE HICN match in Beneficiaries table so return that
+		 * result
+		 */
+		if (matchingBeneficiaryIds.size() == 1)
+			return getBeneficiaryData(matchingBeneficiaryIds);
+
+		/*
+		 * Found more than one HICN match in Beneficiaries table so need to get
+		 * the beneficiary record with the latest reference year
+		 * (https://bluebutton.cms.gov/resources/variables/rfrnc_yr/)
+		 */
+		if (matchingBeneficiaryIds.size() > 1)
+			return getMaxReferenceYearForDupBenes(matchingBeneficiaryIds);
+
 		// Search the BeneficiaryHistory records for HICN matches.
 		Timer.Context timerHicnHistoryQuery = metricRegistry
 				.timer(MetricRegistry.name(getClass().getSimpleName(), "query", "bene_by_hicn", "history")).time();
@@ -282,20 +299,44 @@ public final class PatientResourceProvider implements IResourceProvider {
 		timerHicnHistoryQuery.stop();
 
 		/*
-		 * Because data is always dirty, we watch out for and throw an error if no
-		 * matches are found or if more than one match is found.
+		 * Found more than one HICN match in BeneficiariesHistory table so need
+		 * to get the beneficiary record with the latest reference year
+		 * (https://bluebutton.cms.gov/resources/variables/rfrnc_yr/)
+		 */
+		if (matchingBeneficiaryIds.size() > 1)
+			return getMaxReferenceYearForDupBenes(matchingBeneficiaryIds);
+
+		/*
+		 * Because data is always dirty, we watch out for and throw an error if
+		 * no matches are found.
 		 */
 		if (matchingBeneficiaryIds.size() <= 0) {
 			throw new NoResultException();
-		} else if (matchingBeneficiaryIds.size() > 1) {
-			throw new NonUniqueResultException();
 		}
 
 		/*
-		 * Try to pull the Beneficiary record for the (sole) matching beneficiaryId.
-		 * Because the BeneficiaryHistory table doesn't have a FK to the Beneficiary
-		 * table, we watch out for cases where a matching Beneficiary can't be found
-		 * (again: data is always dirty).
+		 * Found only ONE HICN match in BeneficiariesHistory table so return
+		 * that result
+		 */
+		return getBeneficiaryData(matchingBeneficiaryIds);
+	}
+
+	/**
+	 * @param matchingBeneficiaryIds
+	 *            the {@link Beneficiary#getBeneficiaryId()} value to match
+	 * @return a FHIR {@link Patient} for the CCW {@link Beneficiary} that
+	 *         matches the specified {@link Beneficiary#getHicn()} hash value
+	 * @throws NoResultException
+	 *             A {@link NoResultException} will be thrown if no matching
+	 *             {@link Beneficiary} can be found
+	 */
+	private Patient getBeneficiaryData(Set<String> matchingBeneficiaryIds) {
+
+		/*
+		 * Try to pull the Beneficiary record for the (sole) matching
+		 * beneficiaryId. Because the BeneficiaryHistory table doesn't have a FK
+		 * to the Beneficiary table, we watch out for cases where a matching
+		 * Beneficiary can't be found (again: data is always dirty).
 		 */
 		Beneficiary beneficiary = entityManager.find(Beneficiary.class, matchingBeneficiaryIds.iterator().next());
 		if (beneficiary == null) {
@@ -305,4 +346,50 @@ public final class PatientResourceProvider implements IResourceProvider {
 		Patient patient = BeneficiaryTransformer.transform(metricRegistry, beneficiary);
 		return patient;
 	}
+
+	/**
+	 * 
+	 * Following method will bring back the bene id that has the most recent
+	 * rfrnc_yr since the hicn points to more than one bene id in the
+	 * Beneficiaries table
+	 * 
+	 * @param matchingBeneficiaryIds
+	 *            the {@link Beneficiary#getBeneficiaryId()} value to match
+	 * @return a FHIR {@link Patient} for the CCW {@link Beneficiary} that
+	 *         matches the specified {@link Beneficiary#getHicn()} hash value
+	 * @throws NoResultException
+	 *             A {@link NoResultException} will be thrown if no matching
+	 *             {@link Beneficiary} can be found
+	 */
+	private Patient getMaxReferenceYearForDupBenes(Set<String> matchingBeneficiaryIds) {
+		BigDecimal maxReferenceYear = new BigDecimal(-0001);
+		String maxReferenceYearMatchingBeneficiaryId = null;
+
+		// loop through matching bene ids looking for max rfrnc_yr
+		for (String matchingBeneficiaryId : matchingBeneficiaryIds) {
+			Beneficiary beneficiary = entityManager.find(Beneficiary.class, matchingBeneficiaryId);
+			// bene record not found
+			if (beneficiary == null)
+				continue;
+			// bene record found but reference year is null - still process
+			if (!beneficiary.getBeneEnrollmentReferenceYear().isPresent()) {
+				beneficiary.setBeneEnrollmentReferenceYear(Optional.of(new BigDecimal(0)));
+			}
+			// bene reference year is > than prior reference year
+			if (beneficiary.getBeneEnrollmentReferenceYear().get().compareTo(maxReferenceYear) > 0) {
+				maxReferenceYear = beneficiary.getBeneEnrollmentReferenceYear().get();
+				maxReferenceYearMatchingBeneficiaryId = matchingBeneficiaryId;
+			}
+		}
+
+		// no bene records were found
+		if (maxReferenceYearMatchingBeneficiaryId == null) {
+			throw new NoResultException();
+		}
+
+		Beneficiary maxReferenceYearbeneficiary = entityManager.find(Beneficiary.class,
+				maxReferenceYearMatchingBeneficiaryId);
+		Patient patient = BeneficiaryTransformer.transform(metricRegistry, maxReferenceYearbeneficiary);
+		return patient;
+}
 }
