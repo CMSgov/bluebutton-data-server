@@ -227,6 +227,10 @@ JAVA_OPTS="\$JAVA_OPTS -Dbbfhir.logs.dir=${workDirectory}/"
 # This just adds a searchable bit of text to the command line, so we can 
 # determine which java processes were started by this script.
 JAVA_OPTS="\$JAVA_OPTS -Dbluebutton-server-${bluebuttonServerId}"
+
+# Add the New Relic jar
+JAVA_OPTS="\$JAVA_OPTS -javaagent:./target/newrelic/newrelic.jar"
+
 EOF
 
 # Swap out the original standalone.xml file for our customized one.
