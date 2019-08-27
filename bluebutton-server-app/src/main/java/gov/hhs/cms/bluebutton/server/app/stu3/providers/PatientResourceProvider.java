@@ -1,5 +1,6 @@
 package gov.hhs.cms.bluebutton.server.app.stu3.providers;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -8,7 +9,6 @@ import java.util.Optional;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
 import javax.persistence.NoResultException;
-import javax.persistence.NonUniqueResultException;
 import javax.persistence.PersistenceContext;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -370,14 +370,17 @@ public final class PatientResourceProvider implements IResourceProvider {
 
 		// Then, if we found more than one distinct BENE_ID, or none, throw an error.
 		long distinctBeneIds = matchingBenes.stream().map(b -> b.getBeneficiaryId()).distinct().count();
+		Beneficiary beneficiary = null;
 		if (distinctBeneIds <= 0) {
 			throw new NoResultException();
 		} else if (distinctBeneIds > 1) {
-			throw new NonUniqueResultException();
+			beneficiary = getMaxReferenceYearForDupBenes(matchingBenes);
+		} else if (distinctBeneIds == 1) {
+			beneficiary = matchingBenes.get(0);
+			;
 		}
 		
 		// Then, null out the HICN and MBI if we're not supposed to be returning those.
-		Beneficiary beneficiary = matchingBenes.get(0);
 		if (includeIdentifiersMode != IncludeIdentifiersMode.INCLUDE_HICNS_AND_MBIS) {
 			beneficiary.setHicnUnhashed(Optional.empty());
 			beneficiary.setMedicareBeneficiaryId(Optional.empty());
@@ -388,8 +391,40 @@ public final class PatientResourceProvider implements IResourceProvider {
 	}
 
 	/**
-	 * Enumerates the supported "should we include unique beneficiary identifiers"
-	 * options.
+	 * 
+	 * Following method will bring back the Beneficiary that has the most recent
+	 * rfrnc_yr since the hicn points to more than one bene id in the
+	 * Beneficiaries table
+	 * 
+	 * @param List
+	 *            of matching Beneficiary records the
+	 *            {@link Beneficiary#getBeneficiaryId()} value to match
+	 * @return a FHIR {@link Beneficiary} for the CCW {@link Beneficiary} that
+	 *         matches the specified {@link Beneficiary#getHicn()} hash value
+	 */
+	private Beneficiary getMaxReferenceYearForDupBenes(List<Beneficiary> matchingBeneficiaryIds) {
+		BigDecimal maxReferenceYear = new BigDecimal(-0001);
+		String maxReferenceYearMatchingBeneficiaryId = null;
+
+		// loop through matching bene ids looking for max rfrnc_yr
+		for (Beneficiary beneficiary : matchingBeneficiaryIds) {
+			// bene record found but reference year is null - still process
+			if (!beneficiary.getBeneEnrollmentReferenceYear().isPresent()) {
+				beneficiary.setBeneEnrollmentReferenceYear(Optional.of(new BigDecimal(0)));
+			}
+			// bene reference year is > than prior reference year
+			if (beneficiary.getBeneEnrollmentReferenceYear().get().compareTo(maxReferenceYear) > 0) {
+				maxReferenceYear = beneficiary.getBeneEnrollmentReferenceYear().get();
+				maxReferenceYearMatchingBeneficiaryId = beneficiary.getBeneficiaryId();
+			}
+		}
+
+		return entityManager.find(Beneficiary.class, maxReferenceYearMatchingBeneficiaryId);
+	}
+
+	/**
+	 * Enumerates the supported "should we include unique beneficiary
+	 * identifiers" options.
 	 */
 	public static enum IncludeIdentifiersMode {
 		INCLUDE_HICNS_AND_MBIS,
