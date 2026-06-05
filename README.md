@@ -1,3 +1,8 @@
+This repository has been archived and is no longer maintained.
+The code is provided for historical reference and may contain unpatched or unknown
+vulnerabilities.
+It should not be used in production systems.
+
 # CMS Blue Button 2.0 API Backend Data Server
 
 The CMS Blue Button 2.0 API project provides Medicare beneficiaries with access to their health care data, and supports an ecosystem of third-party applications that can leverage that data.
